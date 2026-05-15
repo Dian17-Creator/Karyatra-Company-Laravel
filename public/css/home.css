@@ -1,0 +1,52 @@
+th.sortable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.sort-icon {
+    font-size: 0.8rem;
+    margin-left: 4px;
+    color: #666;
+}
+
+th.sortable:hover .sort-icon {
+    color: #000;
+}
+
+#searchInput {
+    padding-right: 30px;
+}
+
+#clearSearch {
+    color: #555;
+    cursor: pointer;
+}
+
+#clearSearch:hover {
+    color: #000;
+}
+
+/* === SCROLL & LAYOUT TABEL USER === */
+.table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table-users {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin: 0;
+    /* ⬅️ tidak lagi geser ke kanan */
+    min-width: 2500px;
+    /* boleh diubah sesuai kebutuhan kolom */
+}
+
+@media (max-width: 768px) {
+    .table-users th,
+    .table-users td {
+        white-space: nowrap;
+        font-size: 11px;
+        padding: 4px 6px;
+    }
+}

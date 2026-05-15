@@ -1,0 +1,207 @@
+/* Card */
+.payroll-card .card-body {
+    padding: 1.5rem;
+}
+
+/* Wrapper scroll horizontal */
+.table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 7px;
+}
+
+table.table {
+    width: 100%;
+    table-layout: auto;
+    border-collapse: collapse;
+    font-size: 12px;
+    margin: 0;
+    /* ⬅️ tidak dorong ke kanan */
+}
+
+/* Khusus tabel yang lebar (Data Penggajian) */
+.table-payroll {
+    min-width: 1400px;
+    /* atau sesuaikan nilai ini */
+}
+
+table.table thead th {
+    padding: 6px 10px;
+    vertical-align: middle;
+    white-space: nowrap;
+    font-size: 14px;
+    border: 1px solid #e9e9e9;
+}
+
+table.table tbody td {
+    padding: 12px 10px;
+    vertical-align: middle;
+    white-space: nowrap;
+    /* jangan wrap kecuali benar-benar diperlukan */
+    font-size: 12px;
+    border: 1px solid #e9e9e9;
+}
+
+/* Jika ada data yang panjang (misal note), kita bisa perbolehkan wrap di kolom tertentu */
+.wrap-note {
+    white-space: nowrap;
+    max-width: none;
+    text-align: left;
+    padding-right: 16px;
+}
+
+/* Header styling */
+table.table thead th {
+    background: #f7c6d0;
+    text-align: center;
+    font-weight: 700;
+}
+
+/* Group header */
+.group-header {
+    font-weight: 800;
+}
+
+/* Tombol kecil */
+.table .btn-sm {
+    padding: 3px 6px;
+    font-size: 12px;
+}
+
+/* Sticky header (opsional jika ingin tetap terlihat) */
+.table-sticky thead th {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+}
+
+/* Status badge */
+.badge-draft {
+    background: #6c757d;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+}
+
+.badge-calculated {
+    background: #0d6efd;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+}
+
+.badge-approved {
+    background: #198754;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+}
+
+.badge-locked {
+    background: #343a40;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+}
+
+/* Toolbar */
+.payroll-toolbar {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.payroll-toolbar .period-form {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+}
+
+.period-form label {
+    margin-right: 6px;
+    font-weight: 600;
+}
+
+/* Periode inputs: beri fixed width supaya tidak kepotong */
+.period-form select,
+.period-form input[type="number"],
+.period-form input[type="text"] {
+    height: calc(1.9em + 0.6rem);
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    border: 1px solid #ced4da;
+    background: white;
+    font-size: 13px;
+}
+
+/* Width khusus */
+.period-form .year-input {
+    width: 90px;
+    /* cukup untuk 4 digit */
+}
+
+.period-form .month-input {
+    width: 70px;
+}
+
+/* Tombol kecil pada toolbar */
+.payroll-toolbar .btn {
+    height: calc(1.9em + 0.6rem);
+    padding: 0.25rem 0.6rem;
+    font-size: 13px;
+}
+
+.payroll-toolbar .ms-auto {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+}
+
+.btn-gaji {
+    height: 33px;
+    display: flex;
+    align-items: center;
+}
+
+/* Responsive: sembunyikan kolom non-kritis di layar sangat kecil */
+@media (max-width: 900px) {
+    .col-note,
+    .col-ket,
+    .col-tl,
+    .col-tm {
+        display: none;
+    }
+
+    table.table th,
+    table.table td {
+        font-size: 10px;
+        padding: 5px 6px;
+        white-space: nowrap;
+    }
+
+    /* Periode layout jadi kolom */
+    .payroll-toolbar {
+        gap: 6px;
+    }
+
+    .period-form {
+        gap: 6px;
+    }
+
+    .period-form .year-input {
+        width: 64px;
+    }
+
+    .period-form .month-input {
+        width: 56px;
+    }
+}

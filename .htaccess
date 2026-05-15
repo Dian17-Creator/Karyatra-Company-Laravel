@@ -1,0 +1,42 @@
+# To prevent access to .env and other files
+
+<Files .\*>
+
+# Apache 2.2
+
+<IfModule !mod_authz_core.c>
+Order deny,allow
+Deny from all
+</IfModule>
+
+# Apache 2.4
+
+<IfModule mod_authz_core.c>
+Require all denied
+</IfModule>
+</Files>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Pastikan base path sesuai dengan struktur kamu
+    RewriteBase /laravel/public/
+
+    # Blokir akses langsung ke file sensitif
+    RewriteRule ^(\.env|\.git|\.htaccess|\.gitignore|composer\.json|artisan)$ - [F,L]
+
+    # Jika file atau folder fisik tidak ditemukan
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+
+    # Arahkan semua request ke index.php agar Laravel bisa memproses route
+    RewriteRule ^ index.php [L]
+
+</IfModule>
+
+# Tambahan keamanan opsional
+
+<IfModule mod_headers.c>
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-Content-Type-Options "nosniff"
+</IfModule>
