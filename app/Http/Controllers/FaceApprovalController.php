@@ -56,7 +56,9 @@ class FaceApprovalController extends Controller
         $user = muser::with("faces")->findOrFail($id);
 
         foreach ($user->faces as $face) {
-            $filePath = public_path("hrd/biometrik/" . $face->cfilename);
+            $filePath = public_path(
+                "karyatrahrd/biometrik/" . $face->cfilename,
+            );
 
             if (!file_exists($filePath)) {
                 \Log::warning("Face file not found: {$filePath}");
@@ -89,7 +91,9 @@ class FaceApprovalController extends Controller
         $user = muser::with("faces")->findOrFail($id);
 
         foreach ($user->faces as $face) {
-            $filePath = public_path("hrd/biometrik/" . $face->cfilename);
+            $filePath = public_path(
+                "karyatrahrd/biometrik/" . $face->cfilename,
+            );
 
             if (file_exists($filePath)) {
                 @unlink($filePath);

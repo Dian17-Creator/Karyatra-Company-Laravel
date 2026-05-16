@@ -17,15 +17,15 @@ class PayrollBySystemService
         $salaries = Csalary::where("status", "PENDING")
             // ->where('user_id', 32) // TEST ONLY
             ->where(function ($q) {
-                $q->where("email_status", "!=", "SENT")
-                  ->orWhereNull("email_status");
+                $q->where("email_status", "!=", "SENT")->orWhereNull(
+                    "email_status",
+                );
             })
             ->where("period_month", $month)
             ->where("period_year", $year)
             ->get();
 
         foreach ($salaries as $salary) {
-
             $email = $salary->user->cmailaddress ?? null;
 
             if (!$salary->user || !$email) {
@@ -38,7 +38,7 @@ class PayrollBySystemService
 
             try {
                 $pdfPath = public_path(
-                    "hrd/slipgaji/" . basename($salary->pdf_url)
+                    "karyatrahrd/slipgaji/" . basename($salary->pdf_url),
                 );
 
                 if (!File::exists($pdfPath)) {
@@ -53,7 +53,7 @@ class PayrollBySystemService
                 $salary->status = "BY_SYSTEM";
 
                 Mail::to($email)->send(
-                    new SlipGajiMail($pdfData, $pdfBinary, $filename)
+                    new SlipGajiMail($pdfData, $pdfBinary, $filename),
                 );
 
                 // delay sebentar
@@ -61,7 +61,6 @@ class PayrollBySystemService
 
                 $salary->email_status = "SENT";
                 $salary->email_sent_at = now();
-
             } catch (\Exception $e) {
                 $salary->email_status = "FAILED";
             }

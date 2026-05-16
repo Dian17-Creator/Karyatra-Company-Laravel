@@ -30,7 +30,7 @@ class KirimSlipController extends Controller
             );
         }
 
-        $uploadDir = public_path("hrd/slipgaji");
+        $uploadDir = public_path("karyatrahrd/slipgaji");
         if (!File::exists($uploadDir)) {
             try {
                 File::makeDirectory($uploadDir, 0755, true);
@@ -298,7 +298,7 @@ class KirimSlipController extends Controller
             // store public URL for reference
             $appUrl = rtrim(config("app.url") ?: env("APP_URL", ""), "/");
             //            $itemResult['url'] = "https://absensi.matahati.my.id/laravel/public/uploads/slipgaji/{$filename}";
-            $itemResult["url"] = url("hrd/slipgaji/" . $filename);
+            $itemResult["url"] = url("karyatrahrd/slipgaji/" . $filename);
 
             // free some memory
             if (isset($pdfBinary)) {
@@ -452,7 +452,7 @@ class KirimSlipController extends Controller
             );
         }
 
-        $uploadDir = public_path("hrd/slipgaji");
+        $uploadDir = public_path("karyatrahrd/slipgaji");
         if (!File::exists($uploadDir)) {
             File::makeDirectory($uploadDir, 0755, true);
         }
@@ -632,7 +632,7 @@ class KirimSlipController extends Controller
 
                 $pdfUrl =
                     rtrim(config("app.url") ?: env("APP_URL", ""), "/") .
-                    "/hrd/slipgaji/{$filename}";
+                    "/karyatrahrd/slipgaji/{$filename}";
                 return response()->json(
                     [
                         "success" => true,
@@ -751,7 +751,7 @@ class KirimSlipController extends Controller
 
             $pdfUrl =
                 rtrim(config("app.url") ?: env("APP_URL", ""), "/") .
-                "/hrd/slipgaji/{$filename}";
+                "/karyatrahrd/slipgaji/{$filename}";
             return response()->json(
                 [
                     "success" => true,
@@ -812,7 +812,7 @@ class KirimSlipController extends Controller
             }
 
             // ----- path file & url publik -----
-            $uploadPath = public_path("hrd/slipgaji/" . $filename);
+            $uploadPath = public_path("karyatrahrd/slipgaji/" . $filename);
 
             // pastikan file tersedia di disk (best-effort check)
             clearstatcache(true, $uploadPath);
@@ -824,7 +824,7 @@ class KirimSlipController extends Controller
 
             $appUrl = rtrim(config("app.url") ?: env("APP_URL", ""), "/");
             //$pdfUrl = "https://absensi.matahati.my.id/laravel/public/uploads/slipgaji/{$filename}";
-            $pdfUrl = url("hrd/slipgaji/" . $filename);
+            $pdfUrl = url("karyatrahrd/slipgaji/" . $filename);
 
             Log::info(
                 "WA: preparing send -> user_id={$user->nid} name={$user->cname} phone_raw={$phoneRaw} phone_clean={$clean} filename={$filename} file_exists=" .

@@ -45,7 +45,7 @@ class UserExportController extends Controller
 
             foreach ($user->faces as $face) {
                 //$path = $_SERVER['DOCUMENT_ROOT'] . '/faces/' . $face->cfilename;
-                public_path("hrd/biometrik/" . $face->cfilename);
+                public_path("karyatrahrd/biometrik/" . $face->cfilename);
 
                 if (is_file($path)) {
                     $ext = pathinfo($path, PATHINFO_EXTENSION);

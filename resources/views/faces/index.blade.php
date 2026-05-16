@@ -47,7 +47,7 @@
                                     @foreach ($u->faces as $face)
                                         <div class="rounded-4 overflow-hidden"
                                             style="width: 180px; height: 220px; box-shadow:0 4px 12px rgba(0,0,0,0.08);">
-                                            <img src="/hrd/biometrik/{{ $face->cfilename }}" class="w-100 h-100"
+                                            <img src="/karyatrahrd/biometrik/{{ $face->cfilename }}" class="w-100 h-100"
                                                 style="object-fit: cover;">
                                         </div>
                                     @endforeach

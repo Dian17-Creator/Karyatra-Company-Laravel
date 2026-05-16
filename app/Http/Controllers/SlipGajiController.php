@@ -23,7 +23,8 @@ class SlipGajiController extends Controller
             "preview" => "nullable|in:1",
         ]);
 
-        $uploadPath = rtrim($_SERVER["DOCUMENT_ROOT"], "/") . "/hrd/slipgaji/";
+        $uploadPath =
+            rtrim($_SERVER["DOCUMENT_ROOT"], "/") . "/karyatrahrd/slipgaji/";
 
         // Pastikan folder ada
         if (!File::exists($uploadPath)) {
@@ -251,7 +252,7 @@ class SlipGajiController extends Controller
                         }
 
                         //$pdfUrl = "https://absensi.matahati.my.id/uploads/slipgaji/{$filename}";
-                        $pdfUrl = url("hrd/slipgaji/" . $filename);
+                        $pdfUrl = url("karyatrahrd/slipgaji/" . $filename);
                         $apiKey = env("WATZAP_API_KEY");
                         $numberKey = env("WATZAP_NUMBER_KEY");
 

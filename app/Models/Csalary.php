@@ -235,7 +235,7 @@ class Csalary extends Model
     {
         $this->load("user");
 
-        $folder = public_path("hrd/slipgaji");
+        $folder = public_path("karyatrahrd/slipgaji");
         \File::ensureDirectoryExists($folder);
 
         $slug = \Str::slug($this->user->cname ?? "user");
@@ -257,7 +257,7 @@ class Csalary extends Model
         \File::put($path, $pdfBinary);
 
         //$url = "https://absensi.matahati.my.id/laravel/public/uploads/slipgaji/{$filename}";
-        $url = url("hrd/slipgaji/" . $filename);
+        $url = url("karyatrahrd/slipgaji/" . $filename);
 
         $this->update([
             "pdf_url" => $url,

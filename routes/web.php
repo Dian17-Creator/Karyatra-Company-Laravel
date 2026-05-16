@@ -41,7 +41,7 @@ Route::get("/notifikasi/send-emails", [
 ]);
 
 Route::get("/slip/{filename}", function ($filename) {
-    $path = public_path("hrd/slipgaji/" . $filename);
+    $path = public_path("karyatrahrd/slipgaji/" . $filename);
     if (!file_exists($path)) {
         abort(404);
     }

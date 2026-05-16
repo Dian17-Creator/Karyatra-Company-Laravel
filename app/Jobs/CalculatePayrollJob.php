@@ -508,7 +508,7 @@ class CalculatePayrollJob implements ShouldQueue
 
             $salary->load("user");
 
-            $folder = public_path("hrd/slipgaji");
+            $folder = public_path("karyatrahrd/slipgaji");
             File::ensureDirectoryExists($folder);
 
             $slug = Str::slug($salary->user->cname ?? "user");
@@ -535,7 +535,7 @@ class CalculatePayrollJob implements ShouldQueue
 
             // ===== URL FIX (hardcode domain saja biar aman) =====
             //$url = "https://absensi.matahati.my.id/laravel/public/uploads/slipgaji/{$filename}";
-            $url = url("hrd/slipgaji/" . $filename);
+            $url = url("karyatrahrd/slipgaji/" . $filename);
 
             // ===== UPDATE HANYA KOLOM INI (anti overwrite payload lain) =====
             Csalary::where("id", $salary->id)->update([

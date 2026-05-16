@@ -162,13 +162,13 @@ class PayrollCalculationController extends Controller
         foreach ($userIds as $uid) {
             Log::info("PROCESS USER PAYROLL", ["uid" => $uid]);
 
-            (new CalculatePayrollJob(
+            new CalculatePayrollJob(
                 (int) $uid,
                 $year,
                 $month,
                 $request->has("recalculate"),
-                $request->input("split_by_change") == "1"
-            ))->handle();
+                $request->input("split_by_change") == "1",
+            )->handle();
         }
 
         // =========================
@@ -504,7 +504,7 @@ class PayrollCalculationController extends Controller
             if ($user && $user->cmailaddress && $salary->pdf_url) {
                 try {
                     $filename = basename($salary->pdf_url);
-                    $path = public_path("hrd/slipgaji/" . $filename);
+                    $path = public_path("karyatrahrd/slipgaji/" . $filename);
 
                     Mail::to($user->cmailaddress)->send(
                         new SlipKirimGaji($salary, $path),
@@ -540,7 +540,7 @@ class PayrollCalculationController extends Controller
 
         try {
             $filename = basename($salary->pdf_url);
-            $path = public_path("hrd/slipgaji/" . $filename);
+            $path = public_path("karyatrahrd/slipgaji/" . $filename);
 
             Mail::to($salary->user->cmailaddress)->send(
                 new SlipKirimGaji($salary, $path),
