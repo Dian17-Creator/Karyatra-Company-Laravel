@@ -11,24 +11,67 @@ use App\Models\mrequest;
 use App\Models\mdepartment;
 use App\Models\Mrekening;
 use App\Models\AdminDevice;
+use App\Models\Tdeptlokasi;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 
 class BackofficeController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $authUser = auth()->user();
+        $authUser = Auth::user();
         $query = muser::with(['department', 'rekening'])->orderBy('cname');
 
         if (!$authUser->fhrd) {
             $query->where('niddept', $authUser->niddept);
         }
 
-        $users = $query->get();
+        if ($request->filled('keyword')) {
+            $keyword = $request->keyword;
+            $query->where(function ($q) use ($keyword) {
+                $q->where('cname', 'like', "%{$keyword}%")
+                    ->orWhere('cemail', 'like', "%{$keyword}%")
+                    ->orWhere('cfullname', 'like', "%{$keyword}%")
+                    ->orWhereHas('department', function ($q2) use ($keyword) {
+                        $q2->where('cname', 'like', "%{$keyword}%");
+                    });
+            });
+        }
+
+        if ($request->filled('dept')) {
+            $query->whereHas('department', function ($q) use ($request) {
+                $q->where('cname', $request->dept);
+            });
+        }
+
+        $status = $request->input('status', '1');
+        if ($status !== '') {
+            $query->where('factive', $status);
+        }
+
+        $users = $query->paginate(10)->withQueryString();
         $departments = mdepartment::orderBy('nid')->get();
         $rekenings = Mrekening::orderBy('id')->get();
+
+        $deptLocations = Tdeptlokasi::with('department')
+            ->orderBy('ndeptid', 'asc')
+            ->paginate(10, ['*'], 'dept_page')
+            ->withQueryString();
+
+        if ($request->ajax()) {
+            if ($request->header('X-Component') === 'master_deptlokasi') {
+                return view('backoffice.component.master_deptlokasi', compact('deptLocations', 'departments'))->render();
+            }
+
+            return view('backoffice.component.master_user', compact(
+                'users',
+                'departments',
+                'rekenings'
+            ))->render();
+        }
 
         $devices = \App\Models\AdminDevice::with('user')
             ->orderByDesc('created_at')
@@ -36,8 +79,8 @@ class BackofficeController extends Controller
 
         $admins = muser::where(function ($q) {
             $q->where('fadmin', 1)
-              ->orWhere('fsuper', 1)
-              ->orWhere('fhrd', 1);
+                ->orWhere('fsuper', 1)
+                ->orWhere('fhrd', 1);
         })
             ->orderBy('cname')
             ->get();
@@ -47,13 +90,14 @@ class BackofficeController extends Controller
             'departments',
             'rekenings',
             'devices',
-            'admins'
+            'admins',
+            'deptLocations'
         ));
     }
 
     public function storeUser(Request $request)
     {
-        if (auth()->user()->fhrd != 1) {
+        if (Auth::user()->fhrd != 1) {
             abort(403, 'Anda tidak memiliki izin untuk menambah user.');
         }
 
@@ -118,7 +162,6 @@ class BackofficeController extends Controller
 
                 $user->rekening_id = $rekeningInput ? intval($rekeningInput) : null;
                 $user->bank = 'Mandiri';
-
             } else {
 
                 if ($accNumber) {
@@ -141,9 +184,9 @@ class BackofficeController extends Controller
         return back()->with('success', 'User berhasil ditambahkan.');
     }
 
-    public function updateUser(Request $request, $id)
+    public function updateUser(Request $request, int $id)
     {
-        if (auth()->user()->fhrd != 1) {
+        if (Auth::user()->fhrd != 1) {
             abort(403, 'Anda tidak memiliki izin untuk mengedit user.');
         }
 
@@ -154,17 +197,17 @@ class BackofficeController extends Controller
             $oldActive = (int)$user->factive;
 
             $request->validate([
-                'email'          => 'required|unique:muser,cemail,'.$user->nid.',nid',
+                'email'          => 'required|unique:muser,cemail,' . $user->nid . ',nid',
                 'name'           => 'required|string|min:3|max:255',
                 'cfullname'      => 'nullable|string|max:255',
                 'password'       => 'nullable|min:4',
                 'niddept'        => 'required|exists:mdepartment,nid',
                 'niddeptpayroll' => 'nullable|exists:mdepartment,nid',
-                'cmailaddress'   => 'nullable|email|max:100|unique:muser,cmailaddress,'.$user->nid.',nid',
+                'cmailaddress'   => 'nullable|email|max:100|unique:muser,cmailaddress,' . $user->nid . ',nid',
                 'cphone'         => 'nullable|string|max:20',
                 'cktp'           => 'nullable|string|max:20',
                 'caccnumber'     => 'nullable|string|max:50',
-                'finger_id'      => 'nullable|integer|unique:muser,finger_id,'.$user->nid.',nid',
+                'finger_id'      => 'nullable|integer|unique:muser,finger_id,' . $user->nid . ',nid',
                 'dtanggalmasuk'  => 'nullable|date',
                 'rekening_id'    => 'nullable|exists:mrekening,id',
                 'bank'           => 'nullable|in:BCA,BRI,Mandiri',
@@ -210,7 +253,6 @@ class BackofficeController extends Controller
 
                     $user->bank = 'Mandiri';
                     $user->rekening_id = $rekeningInput ? (int)$rekeningInput : null;
-
                 } else {
 
                     if ($accNumber) {
@@ -232,7 +274,7 @@ class BackofficeController extends Controller
 
             if ($oldActive === 1 && $newActive === 0) {
 
-                \Log::warning("USER DEACTIVATED → CLEAR CSALARY nid={$user->nid}");
+                Log::warning("USER DEACTIVATED → CLEAR CSALARY nid={$user->nid}");
 
                 DB::table('csalary')
                     ->where('user_id', $user->nid)
@@ -247,7 +289,7 @@ class BackofficeController extends Controller
 
     public function addDepartment(Request $request)
     {
-        if (auth()->user()->fsuper != 1) {
+        if (Auth::user()->fsuper != 1) {
             abort(403, 'Anda tidak memiliki izin untuk menambah departemen.');
         }
 
@@ -261,9 +303,9 @@ class BackofficeController extends Controller
 
         return back()->with('success', 'Departemen berhasil ditambahkan.');
     }
-    public function updateDepartment(Request $request, $id)
+    public function updateDepartment(Request $request, int $id)
     {
-        if (auth()->user()->fsuper != 1) {
+        if (Auth::user()->fsuper != 1) {
             abort(403, 'Anda tidak memiliki izin untuk mengubah departemen.');
         }
 
@@ -278,7 +320,7 @@ class BackofficeController extends Controller
     }
     public function deleteDepartment(Request $request)
     {
-        if (auth()->user()->fsuper != 1) {
+        if (Auth::user()->fsuper != 1) {
             abort(403, 'Anda tidak memiliki izin untuk menghapus departemen.');
         }
 
@@ -295,22 +337,22 @@ class BackofficeController extends Controller
     }
     public function deleteLogs(Request $request)
     {
-        if (auth()->user()->fsuper != 1) {
+        if (Auth::user()->fsuper != 1) {
             abort(403, 'Anda tidak memiliki izin untuk menghapus log absensi.');
         }
 
         $userId = $request->user_id;
         DB::transaction(function () use ($userId) {
             mscan::where('nuserId', $userId)->delete();
-            \DB::table('mscan_manual')->where('nuserId', $userId)->delete();
-            \DB::table('mface_scan')->where('nuserId', $userId)->delete();
+            DB::table('mscan_manual')->where('nuserId', $userId)->delete();
+            DB::table('mface_scan')->where('nuserId', $userId)->delete();
         });
 
         return back()->with('success', 'Log absensi user berhasil dihapus.');
     }
     public function deleteRequests(Request $request)
     {
-        if (auth()->user()->fsuper != 1) {
+        if (Auth::user()->fsuper != 1) {
             abort(403, 'Anda tidak memiliki izin untuk menghapus request.');
         }
 
@@ -326,7 +368,7 @@ class BackofficeController extends Controller
 
         return back()->with('success', 'Request user berhasil dihapus.');
     }
-    public function viewLogs($userId)
+    public function viewLogs(int $userId)
     {
         $date = request('date');
 
@@ -339,7 +381,7 @@ class BackofficeController extends Controller
         // =========================
         // 🔹 Ambil data dari mscan
         // =========================
-        $scanLogs = \DB::table('mscan')
+        $scanLogs = DB::table('mscan')
             ->join('muser', 'mscan.nuserId', '=', 'muser.nid')
             ->leftJoin('mtoken as t', 'mscan.ntokenId', '=', 't.nid')
             ->select(
@@ -360,11 +402,12 @@ class BackofficeController extends Controller
                 'muser.fadmin',
                 'muser.fhrd',
                 'muser.fsuper',
-                \DB::raw('COALESCE(mscan.fmanual, 0) as fmanual'),
+                DB::raw('COALESCE(mscan.fmanual, 0) as fmanual'),
                 'muser.cname',
-                \DB::raw("CASE WHEN mscan.creason IS NOT NULL AND mscan.creason != '' THEN 'manual' ELSE 'scan' END as source"),
-                \DB::raw("'mscan' as source_origin"),
-                'mscan.cplacename' // tambahkan cplacename agar konsisten
+                DB::raw("CASE WHEN mscan.creason IS NOT NULL AND mscan.creason != '' THEN 'manual' ELSE 'scan' END as source"),
+                DB::raw("'mscan' as source_origin"),
+                'mscan.cplacename', // tambahkan cplacename agar konsisten
+                DB::raw('NULL as ciswifi')
             )
             ->where('mscan.nuserId', $userId)
             ->whereBetween('mscan.dscanned', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
@@ -373,47 +416,48 @@ class BackofficeController extends Controller
         // =========================
         // 🔹 Ambil data dari mscan_manual
         // =========================
-        $manualLogs = \DB::table('mscan_manual')
-        ->join('muser', 'mscan_manual.nuserId', '=', 'muser.nid')
-        ->select(
-            'mscan_manual.nid',
-            'mscan_manual.nuserId',
-            'mscan_manual.dscanned',
-            'mscan_manual.nlat',
-            'mscan_manual.nlng',
-            \DB::raw('NULL as ntokenId'),
-            \DB::raw('NULL as token_lat'),
-            \DB::raw('NULL as token_lng'),
-            'mscan_manual.creason',
-            'mscan_manual.cphoto_path',
-            'mscan_manual.cstatus',
-            'mscan_manual.csuperstat',
-            'mscan_manual.chrdstat',
-            'mscan_manual.status', // ✅ ambil status MANUAL/FORGOT
-            'muser.cname',
-            'muser.cname',
-            'muser.fadmin',
-            'muser.fhrd',
-            'muser.fsuper',
-            \DB::raw('0 as fmanual'),
+        $manualLogs = DB::table('mscan_manual')
+            ->join('muser', 'mscan_manual.nuserId', '=', 'muser.nid')
+            ->select(
+                'mscan_manual.nid',
+                'mscan_manual.nuserId',
+                'mscan_manual.dscanned',
+                'mscan_manual.nlat',
+                'mscan_manual.nlng',
+                DB::raw('NULL as ntokenId'),
+                DB::raw('NULL as token_lat'),
+                DB::raw('NULL as token_lng'),
+                'mscan_manual.creason',
+                'mscan_manual.cphoto_path',
+                'mscan_manual.cstatus',
+                'mscan_manual.csuperstat',
+                'mscan_manual.chrdstat',
+                'mscan_manual.status', // ✅ ambil status MANUAL/FORGOT
+                'muser.cname',
+                'muser.cname',
+                'muser.fadmin',
+                'muser.fhrd',
+                'muser.fsuper',
+                DB::raw('0 as fmanual'),
 
-            // 🔥 PENTING → source sekarang dari status
-            \DB::raw("LOWER(mscan_manual.status) as source"),
-            \DB::raw("'mscan_manual' as source_origin"),
-            'mscan_manual.cplacename',
-            'mscan_manual.cdevstring'
-        )
-        ->where('mscan_manual.nuserId', $userId)
-        ->whereBetween('mscan_manual.dscanned', [
-            $startDate . ' 00:00:00',
-            $endDate . ' 23:59:59'
-        ])
-        ->get();
+                // 🔥 PENTING → source sekarang dari status
+                DB::raw("LOWER(mscan_manual.status) as source"),
+                DB::raw("'mscan_manual' as source_origin"),
+                'mscan_manual.cplacename',
+                'mscan_manual.cdevstring',
+                DB::raw('NULL as ciswifi')
+            )
+            ->where('mscan_manual.nuserId', $userId)
+            ->whereBetween('mscan_manual.dscanned', [
+                $startDate . ' 00:00:00',
+                $endDate . ' 23:59:59'
+            ])
+            ->get();
 
         // =========================
         // 🔹 Ambil data dari mface_scan (face logs)
         // =========================
-        $faceLogs = \DB::table('mface_scan')
+        $faceLogs = DB::table('mface_scan')
             ->join('muser', 'mface_scan.nuserId', '=', 'muser.nid')
             ->select(
                 'mface_scan.nid',
@@ -421,24 +465,25 @@ class BackofficeController extends Controller
                 'mface_scan.dscanned',
                 'mface_scan.nlat',
                 'mface_scan.nlng',
-                \DB::raw('NULL as ntokenId'),
-                \DB::raw('NULL as token_lat'),
-                \DB::raw('NULL as token_lng'),
-                \DB::raw('NULL as creason'),
+                DB::raw('NULL as ntokenId'),
+                DB::raw('NULL as token_lat'),
+                DB::raw('NULL as token_lng'),
+                DB::raw('NULL as creason'),
                 'mface_scan.cphoto_path',
-                \DB::raw('NULL as cstatus'),
-                \DB::raw('NULL as csuperstat'),
-                \DB::raw('NULL as chrdstat'),
-                \DB::raw('0 as fmanual'),
+                DB::raw('NULL as cstatus'),
+                DB::raw('NULL as csuperstat'),
+                DB::raw('NULL as chrdstat'),
+                DB::raw('0 as fmanual'),
                 'muser.cname',
-                \DB::raw("'face' as source"),
-                \DB::raw("'mface_scan' as source_origin"),
+                DB::raw("'face' as source"),
+                DB::raw("'mface_scan' as source_origin"),
                 'mface_scan.cplacename',
                 'mface_scan.cdevstring',
                 'muser.cname',
                 'muser.fadmin',
                 'muser.fhrd',
-                'muser.fsuper'
+                'muser.fsuper',
+                'mface_scan.ciswifi'
             )
             ->where('mface_scan.nuserId', $userId)
             ->whereBetween('mface_scan.dscanned', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
@@ -457,8 +502,7 @@ class BackofficeController extends Controller
 
         if ($status) {
             $logs = $logs->filter(function ($log) use ($status) {
-                return
-                    ($log->cstatus ?? null) === $status ||
+                return ($log->cstatus ?? null) === $status ||
                     ($log->chrdstat ?? null) === $status ||
                     ($log->csuperstat ?? null) === $status;
             });
@@ -488,7 +532,7 @@ class BackofficeController extends Controller
             'sort' => $sort
         ]);
     }
-    public function viewRequests(Request $request, $userId)
+    public function viewRequests(Request $request, int $userId)
     {
         $user = muser::findOrFail($userId);
         $sort = $request->get('sort', 'desc'); // default terbaru dulu
@@ -517,7 +561,7 @@ class BackofficeController extends Controller
 
         return view('backoffice.requests', compact('user', 'requests', 'sort'));
     }
-    public function viewRequestcard(Request $request, $userId)
+    public function viewRequestcard(Request $request, int $userId)
     {
         $user = muser::findOrFail($userId);
         $sort = $request->get('sort', 'desc'); // default terbaru dulu
@@ -547,7 +591,7 @@ class BackofficeController extends Controller
 
         return view('backoffice.partial.requestcard', compact('user', 'requests', 'sort'));
     }
-    public function apiLogs($userId)
+    public function apiLogs(int $userId)
     {
         try {
             $startDate = request('start_date', now()->subMonth()->toDateString());
@@ -556,7 +600,7 @@ class BackofficeController extends Controller
             // =======================
             // SCAN (mscan)
             // =======================
-            $scanLogs = \DB::table('mscan')
+            $scanLogs = DB::table('mscan')
                 ->select(
                     'nid',
                     'nuserId',
@@ -564,7 +608,7 @@ class BackofficeController extends Controller
                     'nlat',
                     'nlng',
                     'nadminid',
-                    \DB::raw("'scan' as type_absen")
+                    DB::raw("'scan' as type_absen")
                 )
                 ->where('nuserId', $userId)
                 ->whereBetween('dscanned', [
@@ -575,15 +619,15 @@ class BackofficeController extends Controller
             // =======================
             // MANUAL (mscan_manual)
             // =======================
-            $manualLogs = \DB::table('mscan_manual')
+            $manualLogs = DB::table('mscan_manual')
                 ->select(
                     'nid',
                     'nuserId',
                     'dscanned',
                     'nlat',
                     'nlng',
-                    \DB::raw('NULL as nadminid'),
-                    \DB::raw("'manual' as type_absen")
+                    DB::raw('NULL as nadminid'),
+                    DB::raw("'manual' as type_absen")
                 )
                 ->where('nuserId', $userId)
                 ->whereBetween('dscanned', [
@@ -594,15 +638,15 @@ class BackofficeController extends Controller
             // =======================
             // FACE (mface_scan)
             // =======================
-            $faceLogs = \DB::table('mface_scan')
+            $faceLogs = DB::table('mface_scan')
                 ->select(
                     'nid',
                     'nuserId',
                     'dscanned',
                     'nlat',
                     'nlng',
-                    \DB::raw('NULL as nadminid'),
-                    \DB::raw("'face' as type_absen")
+                    DB::raw('NULL as nadminid'),
+                    DB::raw("'face' as type_absen")
                 )
                 ->where('nuserId', $userId)
                 ->whereBetween('dscanned', [
@@ -745,4 +789,149 @@ class BackofficeController extends Controller
         return back()->with('success', "Import fingerprint selesai. Scan baru ditambahkan: {$inserted}.");
     }
 
+    public function apiStoreUser(Request $request)
+    {
+        // if (!Auth::check() || Auth::user()->fhrd != 1) {
+        //     return response()->json([
+        //         'success' => false,
+        //         'message' => 'Anda tidak memiliki izin untuk menambah user.'
+        //     ], 403);
+        // }
+
+        $request->merge([
+            'fnotif' => $request->input('fnotif', 0)
+        ]);
+
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'email'          => 'required|unique:muser,cemail',
+            'name'           => 'required|string|max:255',
+            'cfullname'      => 'nullable|string|max:255',
+            'password'       => 'required|min:3',
+            'niddept'        => 'required|exists:mdepartment,nid',
+            'niddeptpayroll' => 'nullable|exists:mdepartment,nid',
+            'cmailaddress'   => 'nullable|email|max:100|unique:muser,cmailaddress',
+            'caccnumber'     => 'nullable|string|max:50',
+            'cphone'         => 'nullable|string|max:20',
+            'cktp'           => 'nullable|string|max:20',
+            'finger_id'      => 'nullable|integer|unique:muser,finger_id',
+            'dtanggalmasuk'  => 'nullable|date',
+            'rekening_id'    => 'nullable|exists:mrekening,id',
+            'bank'           => 'nullable|in:BCA,BRI,Mandiri',
+            'fnotif'         => 'required|in:0,1'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal.',
+                'errors'  => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $role = $request->input('role', 'crew');
+
+            $user = muser::create([
+                'cemail'         => $request->email,
+                'cmailaddress'   => $request->input('cmailaddress'),
+                'cphone'         => $request->input('cphone'),
+                'caccnumber'     => $request->input('caccnumber'),
+                'cname'          => $request->name,
+                'cfullname'      => $request->input('cfullname'),
+                'cktp'           => $request->input('cktp'),
+                'cpassword'      => Hash::make($request->password),
+                'dtanggalmasuk'  => $request->input('dtanggalmasuk'),
+                'fadmin'         => $role === 'fadmin' ? 1 : 0,
+                'fsuper'         => $role === 'fsuper' ? 1 : 0,
+                'fsenior'        => $role === 'fsenior' ? 1 : 0,
+                'fhrd'           => 0,
+                'factive'        => 1,
+                'fnotif'         => (int)$request->input('fnotif', 0),
+                'niddept'        => $request->niddept,
+                'niddeptpayroll' => $request->input('niddeptpayroll'),
+                'dcreated'       => now(),
+                'finger_id'      => $request->input('finger_id') ?: null,
+            ]);
+
+            $bankInput     = $request->input('bank');
+            $rekeningInput = $request->input('rekening_id');
+            $accNumberRaw  = $request->input('caccnumber');
+            $accNumber     = $accNumberRaw ? preg_replace('/\D+/', '', (string)$accNumberRaw) : null;
+
+            $user->bank = $bankInput ? trim($bankInput) : null;
+            $user->rekening_id = null;
+
+            if ($bankInput) {
+
+                $bankNormalized = trim($bankInput);
+
+                if (strtolower($bankNormalized) === 'mandiri') {
+
+                    $user->rekening_id = $rekeningInput ? intval($rekeningInput) : null;
+                    $user->bank = 'Mandiri';
+                } else {
+
+                    if ($accNumber) {
+
+                        $rek = Mrekening::whereRaw('LOWER(bank)=?', [strtolower($bankNormalized)])
+                            ->where('nomor_rekening', $accNumber)
+                            ->first();
+
+                        if ($rek) {
+                            $user->rekening_id = $rek->id;
+                        }
+                    }
+
+                    $user->bank = $bankNormalized;
+                }
+            }
+
+            $user->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User berhasil ditambahkan.',
+                'data'    => $user
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function apiDepartmentList()
+    {
+        $data = Mdepartment::orderBy('cname')->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $data
+        ]);
+    }
+
+    public function apiBankList()
+    {
+        $banks = Mrekening::select('bank')
+            ->distinct()
+            ->pluck('bank');
+
+        return response()->json([
+            'success' => true,
+            'data' => $banks
+        ]);
+    }
+
+    public function apiMandiriRekening()
+    {
+        $data = Mrekening::where('bank', 'Mandiri')
+            ->orderBy('nomor_rekening')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $data
+        ]);
+    }
 }

@@ -12,44 +12,61 @@ document.addEventListener("DOMContentLoaded", function () {
     // FILTER TABLE
     // =============================
     function filterTable() {
-        if (!tbody) return;
+        if (!document.getElementById("userTable")) return;
 
-        const keyword = searchInput ? searchInput.value.toLowerCase() : "";
-        const selectedDept = departmentFilter
-            ? departmentFilter.value.toLowerCase()
-            : "";
+        const keyword = searchInput ? searchInput.value : "";
+        const selectedDept = departmentFilter ? departmentFilter.value : "";
         const selectedStatus = statusFilter ? statusFilter.value : "";
 
-        const rows = tbody.querySelectorAll("tr");
+        const url = new URL(window.location.href);
+        url.searchParams.set('keyword', keyword);
+        url.searchParams.set('dept', selectedDept);
+        url.searchParams.set('status', selectedStatus);
+        
+        // Reset to page 1 on new search
+        url.searchParams.delete('page');
 
-        rows.forEach((row) => {
-            const text = row.innerText.toLowerCase();
+        const container = document.getElementById('masterUserContainer');
+        if (!container) return;
 
-            const deptCell = row.cells[10]
-                ? row.cells[10].innerText.trim().toLowerCase()
-                : "";
+        container.style.transition = 'opacity 0.2s';
+        container.style.opacity = '0.5';
+        container.style.pointerEvents = 'none';
+        
+        let overlay = document.getElementById('loadingOverlayUser');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'loadingOverlayUser';
+            overlay.innerHTML = '<div class="spinner-border text-success" role="status"><span class="visually-hidden">Loading...</span></div>';
+            overlay.style.position = 'absolute';
+            overlay.style.top = '50%';
+            overlay.style.left = '50%';
+            overlay.style.transform = 'translate(-50%, -50%)';
+            overlay.style.zIndex = '10';
+            container.style.position = 'relative';
+            container.appendChild(overlay);
+        } else {
+            overlay.style.display = 'block';
+        }
 
-            const statusCell = row.cells[13]
-                ? row.cells[13].innerText.trim().toLowerCase()
-                : "";
-
-            const isActive = statusCell === "aktif";
-
-            const matchSearch = text.includes(keyword);
-            const matchDept = selectedDept === "" || deptCell === selectedDept;
-
-            let matchStatus = true;
-
-            if (selectedStatus === "1") {
-                matchStatus = isActive;
+        fetch(url.toString(), {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const newContent = doc.getElementById('masterUserContainer');
+            if (newContent) {
+                container.innerHTML = newContent.innerHTML;
             }
-
-            if (selectedStatus === "0") {
-                matchStatus = !isActive;
-            }
-
-            row.style.display =
-                matchSearch && matchDept && matchStatus ? "" : "none";
+            window.history.pushState({}, '', url.toString());
+        })
+        .finally(() => {
+            container.style.opacity = '1';
+            container.style.pointerEvents = 'auto';
+            const overlay = document.getElementById('loadingOverlayUser');
+            if (overlay) overlay.style.display = 'none';
         });
 
         if (clearSearch) {
@@ -58,7 +75,11 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     if (searchInput) {
-        searchInput.addEventListener("input", filterTable);
+        let timeout = null;
+        searchInput.addEventListener("input", function() {
+            clearTimeout(timeout);
+            timeout = setTimeout(filterTable, 400);
+        });
     }
 
     if (departmentFilter) {
@@ -72,12 +93,10 @@ document.addEventListener("DOMContentLoaded", function () {
     if (clearSearch && searchInput) {
         clearSearch.addEventListener("click", function () {
             searchInput.value = "";
+            clearSearch.style.display = "none";
             filterTable();
         });
     }
-
-    // Jalankan filter saat pertama load
-    filterTable();
 
     // =============================
     // SORTING
@@ -88,7 +107,10 @@ document.addEventListener("DOMContentLoaded", function () {
         };
 
         function sortTable(keyExtractor) {
-            const rows = Array.from(tbody.querySelectorAll("tr")).filter(
+            const currentTbody = document.querySelector("#userTable tbody");
+            if (!currentTbody) return;
+
+            const rows = Array.from(currentTbody.querySelectorAll("tr")).filter(
                 (row) => row.cells.length > 0,
             );
 
@@ -103,49 +125,55 @@ document.addEventListener("DOMContentLoaded", function () {
                     : bText.localeCompare(aText);
             });
 
-            tbody.innerHTML = "";
-            rows.forEach((r) => tbody.appendChild(r));
+            currentTbody.innerHTML = "";
+            rows.forEach((r) => currentTbody.appendChild(r));
 
             sortState.direction = currentDir === "asc" ? "desc" : "asc";
         }
 
-        document.querySelectorAll(".sortable").forEach((header) => {
-            header.addEventListener("click", () => {
-                const column = header.dataset.column;
+        document.addEventListener("click", (e) => {
+            const header = e.target.closest(".sortable");
+            if (!header) return;
 
-                document
-                    .querySelectorAll(".sort-icon")
-                    .forEach((icon) => (icon.textContent = "↕"));
+            const tbodyLocal = document.querySelector("#userTable tbody");
+            if (!tbodyLocal) return;
 
-                // =============================
-                // SORT DEPARTMENT
-                // =============================
-                if (column === "cabang") {
-                    sortTable((row) =>
+            const column = header.dataset.column;
+
+            document
+                .querySelectorAll(".sort-icon")
+                .forEach((icon) => (icon.textContent = "↕"));
+
+            // =============================
+            // SORT DEPARTMENT
+            // =============================
+            if (column === "cabang") {
+                sortTable(
+                    (row) =>
                         row.cells[10]
                             ? row.cells[10].innerText.trim().toLowerCase()
                             : "",
-                    );
+                );
 
-                    document.getElementById("sortIconCabang").textContent =
-                        sortState.direction === "asc" ? "▲" : "▼";
-                }
+                const icon = header.querySelector(".sort-icon");
+                if (icon) icon.textContent = sortState.direction === "asc" ? "▲" : "▼";
+            }
 
-                // =============================
-                // SORT ROLE
-                // =============================
-                if (column === "role") {
-                    const roleOrder = {
-                        HRD: 1,
-                        Supervisor: 2,
-                        Captain: 3,
-                        "Senior Crew": 4,
-                        Crew: 5,
-                    };
+            // =============================
+            // SORT ROLE
+            // =============================
+            if (column === "role") {
+                const roleOrder = {
+                    HRD: 1,
+                    Supervisor: 2,
+                    Captain: 3,
+                    "Senior Crew": 4,
+                    Crew: 5,
+                };
 
-                    const rows = Array.from(
-                        tbody.querySelectorAll("tr"),
-                    ).filter((row) => row.cells.length > 0);
+                const rows = Array.from(
+                    tbodyLocal.querySelectorAll("tr"),
+                ).filter((row) => row.cells.length > 0);
 
                     const currentDir = sortState.direction;
 
@@ -165,8 +193,8 @@ document.addEventListener("DOMContentLoaded", function () {
                             : rankB - rankA;
                     });
 
-                    tbody.innerHTML = "";
-                    rows.forEach((r) => tbody.appendChild(r));
+                    tbodyLocal.innerHTML = "";
+                    rows.forEach((r) => tbodyLocal.appendChild(r));
 
                     sortState.direction = currentDir === "asc" ? "desc" : "asc";
 
@@ -207,7 +235,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 // =============================
                 if (column === "tanggal") {
                     const rows = Array.from(
-                        tbody.querySelectorAll("tr"),
+                        tbodyLocal.querySelectorAll("tr"),
                     ).filter((row) => row.cells.length > 0);
 
                     const currentDir = sortState.direction;
@@ -221,8 +249,8 @@ document.addEventListener("DOMContentLoaded", function () {
                             : dateB - dateA;
                     });
 
-                    tbody.innerHTML = "";
-                    rows.forEach((r) => tbody.appendChild(r));
+                    tbodyLocal.innerHTML = "";
+                    rows.forEach((r) => tbodyLocal.appendChild(r));
 
                     sortState.direction = currentDir === "asc" ? "desc" : "asc";
 
@@ -235,7 +263,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 // =============================
                 if (column === "finger") {
                     const rows = Array.from(
-                        tbody.querySelectorAll("tr"),
+                        tbodyLocal.querySelectorAll("tr"),
                     ).filter((row) => row.cells.length > 0);
 
                     const currentDir = sortState.direction;
@@ -249,8 +277,8 @@ document.addEventListener("DOMContentLoaded", function () {
                         return currentDir === "asc" ? aVal - bVal : bVal - aVal;
                     });
 
-                    tbody.innerHTML = "";
-                    rows.forEach((r) => tbody.appendChild(r));
+                    tbodyLocal.innerHTML = "";
+                    rows.forEach((r) => tbodyLocal.appendChild(r));
 
                     sortState.direction = currentDir === "asc" ? "desc" : "asc";
 
@@ -272,7 +300,6 @@ document.addEventListener("DOMContentLoaded", function () {
                         sortState.direction === "asc" ? "▲" : "▼";
                 }
             });
-        });
     }
 
     // =============================

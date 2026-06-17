@@ -36,6 +36,7 @@ class muser extends Authenticatable
         'bank',
         'fface_approved',
         'fnotif',
+        'ccompany',
     ];
     protected $hidden = [
         'cpassword',
