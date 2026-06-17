@@ -5,15 +5,13 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\muser;
+use App\Models\Mowner;
+use Illuminate\Support\Facades\Hash;
 
 class LoginController extends Controller
 {
-    /**
-     * Tampilkan halaman login (auth/login.blade.php)
-     */
     public function showLoginForm()
     {
-        // kalau sudah login, langsung redirect ke backoffice
         if (Auth::check()) {
             return redirect('/backoffice');
         }
@@ -21,9 +19,6 @@ class LoginController extends Controller
         return view('auth.login');
     }
 
-    /**
-     * Proses login
-     */
     public function login(Request $request)
     {
         $request->validate([
@@ -31,33 +26,59 @@ class LoginController extends Controller
             'cpassword' => 'required',
         ]);
 
-        $user = \App\Models\muser::where('cemail', $request->cemail)->first();
+        $owner = Mowner::where('cemail', $request->cemail)->first();
+        if ($owner && Hash::check($request->cpassword, $owner->cpassword)) {
+            Auth::guard('owner')->login($owner);
+            return redirect()->intended('/backoffice');
+        }
 
-        // jika user ditemukan dan password cocok (pakai bcrypt)
-        if ($user && \Hash::check($request->cpassword, $user->cpassword)) {
-            // login manual
-            Auth::login($user);
-
-            // cek role
+        $user = muser::where('cemail', $request->cemail)->first();
+        if ($user && Hash::check($request->cpassword, $user->cpassword)) {
             if ($user->fadmin == 1 || $user->fsuper == 1) {
+                Auth::login($user);
                 return redirect()->intended('/backoffice');
             }
 
-            Auth::logout();
             return back()->withErrors(['cemail' => 'Akses hanya untuk Super Admin!']);
         }
 
-        // kalau gagal
         return back()->withErrors(['cemail' => 'Email atau password salah.']);
     }
 
 
-    /**
-     * Logout user
-     */
     public function logout()
     {
-        Auth::logout();
+        Auth::guard('web')->logout();
+        Auth::guard('owner')->logout();
         return redirect('/login');
+    }
+
+    public function showRegisterForm()
+    {
+        return view('auth.register');
+    }
+
+    public function register(Request $request)
+    {
+        $request->validate([
+            'ccompany' => 'required|string|max:100',
+            'cname' => 'required|string|max:255',
+            'cemail' => 'required|email|unique:mowner,cemail',
+            'cpassword' => 'required|string',
+        ]);
+
+        $owner = Mowner::create([
+            'ccompany' => $request->ccompany,
+            'cname' => $request->cname,
+            'cemail' => $request->cemail,
+            'cpassword' => Hash::make($request->cpassword),
+            'dcreated' => now(),
+        ]);
+
+        // Opsional: Langsung login setelah daftar
+        // Auth::login($owner); 
+        // Note: Mowner harus implement Authenticatable jika ingin pakai Auth::login($owner)
+
+        return redirect('/login')->with('success', 'Registrasi berhasil! Silakan login.');
     }
 }
