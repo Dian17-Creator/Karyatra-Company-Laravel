@@ -40,6 +40,10 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+        'owner' => [
+            'driver' => 'session',
+            'provider' => 'owners',
+        ],
     ],
 
     /*
@@ -63,6 +67,11 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', App\Models\muser::class),
+        ],
+
+        'owners' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Mowner::class,
         ],
 
         // 'users' => [

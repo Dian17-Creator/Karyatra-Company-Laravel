@@ -15,56 +15,56 @@
              </thead>
              <tbody>
                  @forelse($masters as $shift)
-                     <tr>
-                         <td>{{ $shift->cname }}</td>
+                 <tr>
+                     <td>{{ $shift->cname }}</td>
 
-                         {{-- TOTAL JAM KERJA --}}
-                         <td>
-                             {{ $shift->ctotal ? $shift->ctotal . ' Jam' : '-' }}
-                         </td>
+                     {{-- TOTAL JAM KERJA --}}
+                     <td>
+                         {{ $shift->ctotal ? $shift->ctotal . ' Jam' : '-' }}
+                     </td>
 
-                         {{-- JAM MULAI --}}
-                         <td>
-                             {{ $shift->dstart ? substr($shift->dstart, 0, 5) : '-' }}
-                         </td>
+                     {{-- JAM MULAI --}}
+                     <td>
+                         {{ $shift->dstart ? substr($shift->dstart, 0, 5) : '-' }}
+                     </td>
 
-                         {{-- JAM SELESAI --}}
-                         <td>
-                             {{ $shift->dend ? substr($shift->dend, 0, 5) : '-' }}
-                         </td>
+                     {{-- JAM SELESAI --}}
+                     <td>
+                         {{ $shift->dend ? substr($shift->dend, 0, 5) : '-' }}
+                     </td>
 
-                         <td>
-                             {{ $shift->dstart2 ? substr($shift->dstart2, 0, 5) : '-' }}
-                         </td>
+                     <td>
+                         {{ $shift->dstart2 ? substr($shift->dstart2, 0, 5) : '-' }}
+                     </td>
 
-                         <td>
-                             {{ $shift->dend2 ? substr($shift->dend2, 0, 5) : '-' }}
-                         </td>
+                     <td>
+                         {{ $shift->dend2 ? substr($shift->dend2, 0, 5) : '-' }}
+                     </td>
 
-                         <td>
-                             <div class="d-flex justify-content-center gap-2">
-                                 <button class="btn btn-warning btn-sm text-white" data-bs-toggle="modal"
-                                     data-bs-target="#editShiftModal{{ $shift->nid }}">
-                                     Edit
-                                 </button>
+                     <td>
+                         <div class="d-flex justify-content-center gap-2">
+                             <button class="btn btn-warning btn-sm text-white" data-bs-toggle="modal"
+                                 data-bs-target="#editShiftModal{{ $shift->nid }}">
+                                 Edit
+                             </button>
 
-                                 <form action="{{ url('/schedule/' . $shift->nid) }}" method="POST"
-                                     onsubmit="return confirm('Hapus shift ini?')">
-                                     @csrf
-                                     @method('DELETE')
-                                     <button type="submit" class="btn btn-danger btn-sm">Hapus</button>
-                                 </form>
-                             </div>
-                         </td>
-                     </tr>
+                             <form action="{{ url('/schedule/' . $shift->nid) }}" method="POST"
+                                 onsubmit="return confirm('Hapus shift ini?')">
+                                 @csrf
+                                 @method('DELETE')
+                                 <button type="submit" class="btn btn-danger btn-sm">Hapus</button>
+                             </form>
+                         </div>
+                     </td>
+                 </tr>
 
 
-                     {{-- Modal Edit Shift --}}
-                     @include('schedule.modal.modal_edit_shift')
+                 {{-- Modal Edit Shift --}}
+                 @include('schedule.modal.modal_edit_shift')
                  @empty
-                     <tr>
-                         <td colspan="4" class="text-muted">Belum ada data shift</td>
-                     </tr>
+                 <tr>
+                     <td colspan="7" class="text-muted">Belum ada data shift</td>
+                 </tr>
                  @endforelse
              </tbody>
          </table>

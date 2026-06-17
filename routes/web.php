@@ -25,6 +25,7 @@ use App\Http\Controllers\AdminDeviceController;
 use App\Http\Controllers\UserExportController;
 use App\Http\Controllers\MscanForgotController;
 use Illuminate\Support\Facades\Mail;
+use App\Http\Controllers\MownerController;
 use App\Mail\NotifikasiEmail;
 
 Route::get("/", function () {
@@ -33,6 +34,8 @@ Route::get("/", function () {
 
 Route::get("/login", [LoginController::class, "showLoginForm"])->name("login");
 Route::post("/login", [LoginController::class, "login"]);
+Route::get("/register", [LoginController::class, "showRegisterForm"]);
+Route::post("/register", [LoginController::class, "register"]);
 Route::post("/logout", [LoginController::class, "logout"])->name("logout");
 
 Route::get("/notifikasi/send-emails", [
@@ -48,7 +51,7 @@ Route::get("/slip/{filename}", function ($filename) {
     return response()->file($path);
 });
 
-Route::middleware(["auth"])->group(function () {
+Route::middleware(["auth:web,owner"])->group(function () {
     // Backoffice (hanya admin-super)
     Route::get("/backoffice", [BackofficeController::class, "index"])->name(
         "backoffice.index",
@@ -259,7 +262,7 @@ Route::middleware(["auth"])->group(function () {
         "importAndSend",
     ])
         ->name("backoffice.importSlips")
-        ->middleware("auth");
+        ->middleware("auth:web,owner");
 
     // 🔹 Detail Izin (mrequest)
     Route::get("/izin/{id}", [mrequestController::class, "show"])->name(
@@ -465,4 +468,7 @@ Route::middleware(["auth"])->group(function () {
         PayrollCalculationController::class,
         "resendEmail",
     ])->name("salary.resend");
+
+    // Mowner Management
+    Route::resource('mowner', MownerController::class);
 });
