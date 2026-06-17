@@ -1,10 +1,10 @@
 {{-- resources/views/backoffice/partials/modal_tambah_user.blade.php --}}
 <div class="modal fade" id="addUserModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
         <form method="POST" action="{{ route('backoffice.add') }}">
             @csrf
             <div class="modal-content">
-                <div class="modal-header bg-success text-white">
+                <div class="modal-header bg-danger text-white">
                     <h5 class="modal-title">Tambah User</h5>
                 </div>
 
@@ -49,12 +49,12 @@
                                 required>
                         </div>
 
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-5 mb-3">
                             <label>Nama Lengkap</label>
                             <input type="text" name="cfullname" class="form-control" value="{{ old('cfullname') }}">
                         </div>
 
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label>Tanggal Masuk</label>
                             <input type="date" name="dtanggalmasuk" class="form-control"
                                 value="{{ old('dtanggalmasuk') }}">
@@ -68,27 +68,27 @@
 
                         {{-- Prepare rekenings --}}
                         @php
-                            $allReks = isset($rekenings) ? $rekenings : collect();
+                        $allReks = isset($rekenings) ? $rekenings : collect();
 
-                            // unik berdasarkan bank + nomor_rekening
-                            $uniqueReks = $allReks
-                                ->unique(function ($r) {
-                                    $bank = isset($r->bank) ? strtolower(trim($r->bank)) : '';
-                                    $nom = isset($r->nomor_rekening)
-                                        ? preg_replace('/\D+/', '', (string) $r->nomor_rekening)
-                                        : '';
-                                    return $bank . '|' . $nom;
-                                })
-                                ->values();
+                        // unik berdasarkan bank + nomor_rekening
+                        $uniqueReks = $allReks
+                        ->unique(function ($r) {
+                        $bank = isset($r->bank) ? strtolower(trim($r->bank)) : '';
+                        $nom = isset($r->nomor_rekening)
+                        ? preg_replace('/\D+/', '', (string) $r->nomor_rekening)
+                        : '';
+                        return $bank . '|' . $nom;
+                        })
+                        ->values();
 
-                            $mandiriReks = $uniqueReks
-                                ->filter(function ($r) {
-                                    return isset($r->bank) && strtolower(trim($r->bank)) === 'mandiri';
-                                })
-                                ->values();
+                        $mandiriReks = $uniqueReks
+                        ->filter(function ($r) {
+                        return isset($r->bank) && strtolower(trim($r->bank)) === 'mandiri';
+                        })
+                        ->values();
 
-                            $currentBank = old('bank', '');
-                            $currentRekeningId = old('rekening_id', '');
+                        $currentBank = old('bank', '');
+                        $currentRekeningId = old('rekening_id', '');
                         @endphp
 
                         {{-- Jenis bank (enum: BCA, BRI, Mandiri) --}}
@@ -112,25 +112,25 @@
                                 <option value="">-- Pilih Rekening --</option>
 
                                 @if ($mandiriReks->count())
-                                    @foreach ($mandiriReks as $rek)
-                                        @php
-                                            $nom = $rek->nomor_rekening ?? '';
-                                            $nomDisp = $nom ? preg_replace('/\D+/', '', (string) $nom) : '';
-                                            $bankLabel = strtoupper($rek->bank ?? '');
-                                            $atasNama = $rek->atas_nama ?? '';
-                                            $label = trim(
-                                                $bankLabel .
-                                                    ($nomDisp ? " - {$nomDisp}" : '') .
-                                                    ($atasNama ? " ({$atasNama})" : ''),
-                                            );
-                                        @endphp
-                                        <option value="{{ $rek->id }}"
-                                            {{ (string) $rek->id === (string) $currentRekeningId ? 'selected' : '' }}>
-                                            {{ $label }}
-                                        </option>
-                                    @endforeach
+                                @foreach ($mandiriReks as $rek)
+                                @php
+                                $nom = $rek->nomor_rekening ?? '';
+                                $nomDisp = $nom ? preg_replace('/\D+/', '', (string) $nom) : '';
+                                $bankLabel = strtoupper($rek->bank ?? '');
+                                $atasNama = $rek->atas_nama ?? '';
+                                $label = trim(
+                                $bankLabel .
+                                ($nomDisp ? " - {$nomDisp}" : '') .
+                                ($atasNama ? " ({$atasNama})" : ''),
+                                );
+                                @endphp
+                                <option value="{{ $rek->id }}"
+                                    {{ (string) $rek->id === (string) $currentRekeningId ? 'selected' : '' }}>
+                                    {{ $label }}
+                                </option>
+                                @endforeach
                                 @else
-                                    <option disabled>Belum ada data rekening Mandiri</option>
+                                <option disabled>Belum ada data rekening Mandiri</option>
                                 @endif
                             </select>
                         </div>
@@ -145,10 +145,10 @@
                             <select name="niddept" class="form-control" required>
                                 <option value="">-- Pilih Departemen --</option>
                                 @foreach ($departments as $dept)
-                                    <option value="{{ $dept->nid }}"
-                                        {{ old('niddept') == $dept->nid ? 'selected' : '' }}>
-                                        {{ $dept->cname }}
-                                    </option>
+                                <option value="{{ $dept->nid }}"
+                                    {{ old('niddept') == $dept->nid ? 'selected' : '' }}>
+                                    {{ $dept->cname }}
+                                </option>
                                 @endforeach
                             </select>
                         </div>
@@ -158,10 +158,10 @@
                             <select name="niddeptpayroll" class="form-control" required>
                                 <option value="">-- Pilih Departemen --</option>
                                 @foreach ($departments as $dept)
-                                    <option value="{{ $dept->nid }}"
-                                        {{ old('niddeptpayroll') == $dept->nid ? 'selected' : '' }}>
-                                        {{ $dept->cname }}
-                                    </option>
+                                <option value="{{ $dept->nid }}"
+                                    {{ old('niddeptpayroll') == $dept->nid ? 'selected' : '' }}>
+                                    {{ $dept->cname }}
+                                </option>
                                 @endforeach
                             </select>
                         </div>
@@ -207,9 +207,9 @@
                     </div>
                 </div>
 
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-success">Simpan</button>
+                <div class="modal-footer d-flex justify-content-between w-100 gap-2">
+                    <button type="button" class="btn btn-secondary flex-fill" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-success flex-fill">Simpan</button>
                 </div>
             </div>
         </form>

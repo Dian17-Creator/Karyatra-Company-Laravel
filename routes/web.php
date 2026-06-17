@@ -24,6 +24,7 @@ use App\Http\Controllers\FaceApprovalController;
 use App\Http\Controllers\AdminDeviceController;
 use App\Http\Controllers\UserExportController;
 use App\Http\Controllers\MscanForgotController;
+use App\Http\Controllers\TdeptlokasiController;
 use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\MownerController;
 use App\Mail\NotifikasiEmail;
@@ -471,4 +472,6 @@ Route::middleware(["auth:web,owner"])->group(function () {
 
     // Mowner Management
     Route::resource('mowner', MownerController::class);
+
+    Route::resource("tdeptlokasi", TdeptlokasiController::class);
 });

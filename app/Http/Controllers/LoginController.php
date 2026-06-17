@@ -63,17 +63,31 @@ class LoginController extends Controller
         $request->validate([
             'ccompany' => 'required|string|max:100',
             'cname' => 'required|string|max:255',
-            'cemail' => 'required|email|unique:mowner,cemail',
+            'cemail' => 'required|email|unique:mowner,cemail|unique:muser,cemail',
             'cpassword' => 'required|string',
         ]);
 
-        $owner = Mowner::create([
-            'ccompany' => $request->ccompany,
-            'cname' => $request->cname,
-            'cemail' => $request->cemail,
-            'cpassword' => Hash::make($request->cpassword),
-            'dcreated' => now(),
-        ]);
+        \DB::transaction(function () use ($request) {
+            Mowner::create([
+                'ccompany' => $request->ccompany,
+                'cname' => $request->cname,
+                'cemail' => $request->cemail,
+                'cpassword' => Hash::make($request->cpassword),
+                'dcreated' => now(),
+            ]);
+
+            muser::create([
+                'ccompany' => $request->ccompany,
+                'cname' => $request->cname,
+                'cemail' => $request->cemail,
+                'cpassword' => Hash::make($request->cpassword),
+                'dcreated' => now(),
+                'fadmin' => 1,
+                'fsuper' => 1,
+                'fhrd' => 1,
+                'factive' => 1,
+            ]);
+        });
 
         // Opsional: Langsung login setelah daftar
         // Auth::login($owner); 

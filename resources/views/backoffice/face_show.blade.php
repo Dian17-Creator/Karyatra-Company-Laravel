@@ -18,7 +18,7 @@
                 @php
                     // 🔥 URL ABSOLUT (SAMA DENGAN LOG ABSENSI)
                     //$faceUrl = 'https://absensi.matahati.my.id/faces/' . ltrim($face->cfilename, '/');
-                    $faceUrl = url('karyatrahrd/biometrik/' . $face->cfilename);
+                    $faceUrl = url('hrd/biometrik/' . $face->cfilename);
                 @endphp
 
                 <div class="rounded-4 overflow-hidden" style="width:200px;height:240px;box-shadow:0 4px 12px rgba(0,0,0,.1)">

@@ -5,7 +5,7 @@
             @csrf
             @method('PUT')
             <div class="modal-content">
-                <div class="modal-header bg-warning text-white">
+                <div class="modal-header bg-danger text-white">
                     <h5 class="modal-title">Edit User</h5>
                 </div>
 
@@ -33,14 +33,14 @@
                         </div>
 
                         {{-- No Telepon --}}
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-3 mb-3">
                             <label>No. Telepon</label>
                             <input type="text" name="cphone" class="form-control"
                                 value="{{ old('cphone', $user->cphone) }}" placeholder="">
                         </div>
 
                         {{-- KTP --}}
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-5 mb-3">
                             <label>No. KTP</label>
                             <input type="text" name="cktp" class="form-control"
                                 value="{{ old('cktp', $user->cktp) }}" placeholder="">
@@ -61,14 +61,14 @@
                         </div>
 
                         {{-- Nama Lengkap --}}
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-5 mb-3">
                             <label>Nama Lengkap</label>
                             <input type="text" name="cfullname" class="form-control"
                                 value="{{ old('cfullname', $user->cfullname) }}" placeholder="">
                         </div>
 
                         {{-- Tanggal Masuk --}}
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label>Tanggal Masuk</label>
                             <input type="date" name="dtanggalmasuk" class="form-control"
                                 value="{{ old('dtanggalmasuk', $user->dtanggalmasuk ? \Carbon\Carbon::parse($user->dtanggalmasuk)->format('Y-m-d') : '') }}">
@@ -84,28 +84,28 @@
 
                         {{-- Prepare rekening collections (dedup & filter) --}}
                         @php
-                            $allReks = isset($rekenings) ? $rekenings : collect();
+                        $allReks = isset($rekenings) ? $rekenings : collect();
 
-                            $uniqueReks = $allReks
-                                ->unique(function ($r) {
-                                    $bank = isset($r->bank) ? strtolower(trim($r->bank)) : '';
-                                    $nom = isset($r->nomor_rekening)
-                                        ? preg_replace('/\D+/', '', (string) $r->nomor_rekening)
-                                        : '';
-                                    return $bank . '|' . $nom;
-                                })
-                                ->values();
+                        $uniqueReks = $allReks
+                        ->unique(function ($r) {
+                        $bank = isset($r->bank) ? strtolower(trim($r->bank)) : '';
+                        $nom = isset($r->nomor_rekening)
+                        ? preg_replace('/\D+/', '', (string) $r->nomor_rekening)
+                        : '';
+                        return $bank . '|' . $nom;
+                        })
+                        ->values();
 
-                            $mandiriReks = $uniqueReks
-                                ->filter(function ($r) {
-                                    return isset($r->bank) && strtolower(trim($r->bank)) === 'mandiri';
-                                })
-                                ->values();
+                        $mandiriReks = $uniqueReks
+                        ->filter(function ($r) {
+                        return isset($r->bank) && strtolower(trim($r->bank)) === 'mandiri';
+                        })
+                        ->values();
 
-                            // preferensi: old() -> muser.bank -> muser->rekening->bank
-                            $currentBank = old('bank') ?? ($user->bank ?? ($user->rekening->bank ?? ''));
-                            $currentRekeningId = old('rekening_id') ?? ($user->rekening_id ?? '');
-                            $nid = $user->nid;
+                        // preferensi: old() -> muser.bank -> muser->rekening->bank
+                        $currentBank = old('bank') ?? ($user->bank ?? ($user->rekening->bank ?? ''));
+                        $currentRekeningId = old('rekening_id') ?? ($user->rekening_id ?? '');
+                        $nid = $user->nid;
                         @endphp
 
                         {{-- Jenis Bank --}}
@@ -131,25 +131,25 @@
                                 <option value="">-- Pilih Rekening --</option>
 
                                 @if ($mandiriReks->count())
-                                    @foreach ($mandiriReks as $rek)
-                                        @php
-                                            $nom = $rek->nomor_rekening ?? '';
-                                            $nomDisp = $nom ? preg_replace('/\D+/', '', (string) $nom) : '';
-                                            $bankLabel = strtoupper($rek->bank ?? '');
-                                            $atasNama = $rek->atas_nama ?? '';
-                                            $label = trim(
-                                                $bankLabel .
-                                                    ($nomDisp ? " - {$nomDisp}" : '') .
-                                                    ($atasNama ? " ({$atasNama})" : ''),
-                                            );
-                                        @endphp
-                                        <option value="{{ $rek->id }}"
-                                            {{ (string) $rek->id === (string) $currentRekeningId ? 'selected' : '' }}>
-                                            {{ $label }}
-                                        </option>
-                                    @endforeach
+                                @foreach ($mandiriReks as $rek)
+                                @php
+                                $nom = $rek->nomor_rekening ?? '';
+                                $nomDisp = $nom ? preg_replace('/\D+/', '', (string) $nom) : '';
+                                $bankLabel = strtoupper($rek->bank ?? '');
+                                $atasNama = $rek->atas_nama ?? '';
+                                $label = trim(
+                                $bankLabel .
+                                ($nomDisp ? " - {$nomDisp}" : '') .
+                                ($atasNama ? " ({$atasNama})" : ''),
+                                );
+                                @endphp
+                                <option value="{{ $rek->id }}"
+                                    {{ (string) $rek->id === (string) $currentRekeningId ? 'selected' : '' }}>
+                                    {{ $label }}
+                                </option>
+                                @endforeach
                                 @else
-                                    <option disabled>Belum ada data rekening Mandiri</option>
+                                <option disabled>Belum ada data rekening Mandiri</option>
                                 @endif
                             </select>
                         </div>
@@ -162,10 +162,10 @@
                             <label>Departemen</label>
                             <select name="niddept" class="form-control" required>
                                 @foreach ($departments as $dept)
-                                    <option value="{{ $dept->nid }}"
-                                        {{ $user->niddept == $dept->nid ? 'selected' : '' }}>
-                                        {{ $dept->cname }}
-                                    </option>
+                                <option value="{{ $dept->nid }}"
+                                    {{ $user->niddept == $dept->nid ? 'selected' : '' }}>
+                                    {{ $dept->cname }}
+                                </option>
                                 @endforeach
                             </select>
                         </div>
@@ -174,10 +174,10 @@
                             <label>Payroll Departemen</label>
                             <select name="niddeptpayroll" class="form-control" required>
                                 @foreach ($departments as $dept)
-                                    <option value="{{ $dept->nid }}"
-                                        {{ $user->niddeptpayroll == $dept->nid ? 'selected' : '' }}>
-                                        {{ $dept->cname }}
-                                    </option>
+                                <option value="{{ $dept->nid }}"
+                                    {{ $user->niddeptpayroll == $dept->nid ? 'selected' : '' }}>
+                                    {{ $dept->cname }}
+                                </option>
                                 @endforeach
                             </select>
                         </div>
@@ -252,9 +252,9 @@
                     </div>
                 </div>
 
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-warning text-white">Simpan</button>
+                <div class="modal-footer d-flex justify-content-between w-100 gap-2">
+                    <button type="button" class="btn btn-secondary flex-fill" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-success flex-fill">Simpan</button>
                 </div>
             </div>
         </form>
@@ -327,43 +327,3 @@
 
     .role-card.crew {}
 </style>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        (function() {
-            const nid = "{{ $nid }}";
-            const bankSelect = document.getElementById('bankSelect' + nid);
-            const mandiriWrapper = document.getElementById('mandiriRekeningWrapper' + nid);
-            const rekeningSelect = document.getElementById('rekeningSelect' + nid);
-            const modalEl = document.getElementById('editUserModal' + nid);
-
-            function isMandiri(value) {
-                return String(value || '').toLowerCase() === 'mandiri';
-            }
-
-            function toggleMandiriDropdown() {
-                if (!bankSelect) return;
-                if (isMandiri(bankSelect.value)) {
-                    mandiriWrapper.style.display = '';
-                    rekeningSelect && rekeningSelect.setAttribute('required', 'required');
-                } else {
-                    mandiriWrapper.style.display = 'none';
-                    rekeningSelect && rekeningSelect.removeAttribute('required');
-                }
-            }
-
-            // inisialisasi saat DOM ready
-            toggleMandiriDropdown();
-
-            // re-check on change
-            bankSelect && bankSelect.addEventListener('change', toggleMandiriDropdown);
-
-            // juga re-check ketika modal dibuka (untuk nilai yang dipopulate oleh server/old())
-            if (modalEl) {
-                modalEl.addEventListener('show.bs.modal', function() {
-                    toggleMandiriDropdown();
-                });
-            }
-        })();
-    });
-</script>
