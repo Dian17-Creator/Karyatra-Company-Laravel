@@ -150,8 +150,8 @@ document.addEventListener("DOMContentLoaded", function () {
             if (column === "cabang") {
                 sortTable(
                     (row) =>
-                        row.cells[10]
-                            ? row.cells[10].innerText.trim().toLowerCase()
+                        row.cells[11]
+                            ? row.cells[11].innerText.trim().toLowerCase()
                             : "",
                 );
 
@@ -178,11 +178,11 @@ document.addEventListener("DOMContentLoaded", function () {
                     const currentDir = sortState.direction;
 
                     rows.sort((a, b) => {
-                        const roleA = a.cells[12]
-                            ? a.cells[12].innerText.trim()
+                        const roleA = a.cells[13]
+                            ? a.cells[13].innerText.trim()
                             : "";
-                        const roleB = b.cells[12]
-                            ? b.cells[12].innerText.trim()
+                        const roleB = b.cells[13]
+                            ? b.cells[13].innerText.trim()
                             : "";
 
                         const rankA = roleOrder[roleA] || 999;
@@ -207,8 +207,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 // =============================
                 if (column === "nama") {
                     sortTable((row) =>
-                        row.cells[6]
-                            ? row.cells[6].innerText.trim().toLowerCase()
+                        row.cells[7]
+                            ? row.cells[7].innerText.trim().toLowerCase()
                             : "",
                     );
 
@@ -221,8 +221,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 // =============================
                 if (column === "fullname") {
                     sortTable((row) =>
-                        row.cells[7]
-                            ? row.cells[7].innerText.trim().toLowerCase()
+                        row.cells[8]
+                            ? row.cells[8].innerText.trim().toLowerCase()
                             : "",
                     );
 
@@ -241,8 +241,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     const currentDir = sortState.direction;
 
                     rows.sort((a, b) => {
-                        const dateA = new Date(a.cells[9]?.innerText.trim());
-                        const dateB = new Date(b.cells[9]?.innerText.trim());
+                        const dateA = new Date(a.cells[10]?.innerText.trim());
+                        const dateB = new Date(b.cells[10]?.innerText.trim());
 
                         return currentDir === "asc"
                             ? dateA - dateB
@@ -270,9 +270,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
                     rows.sort((a, b) => {
                         const aVal =
-                            parseInt(a.cells[8]?.innerText.trim()) || 0;
+                            parseInt(a.cells[9]?.innerText.trim()) || 0;
                         const bVal =
-                            parseInt(b.cells[8]?.innerText.trim()) || 0;
+                            parseInt(b.cells[9]?.innerText.trim()) || 0;
 
                         return currentDir === "asc" ? aVal - bVal : bVal - aVal;
                     });
@@ -291,14 +291,14 @@ document.addEventListener("DOMContentLoaded", function () {
                 // =============================
                 if (column === "payroll") {
                     sortTable((row) =>
-                        row.cells[11]
-                            ? row.cells[11].innerText.trim().toLowerCase()
+                        row.cells[12]
+                            ? row.cells[12].innerText.trim().toLowerCase()
                             : "",
-                    );
+                );
 
-                    document.getElementById("sortIconPayroll").textContent =
-                        sortState.direction === "asc" ? "▲" : "▼";
-                }
+                document.getElementById("sortIconPayroll").textContent =
+                    sortState.direction === "asc" ? "▲" : "▼";
+            }
             });
     }
 

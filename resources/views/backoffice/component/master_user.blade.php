@@ -7,6 +7,7 @@
             <table id="userTable" class="table table-bordered align-middle text-center table-users">
                 <thead class="bg-light">
                     <tr>
+                        <th style="background-color: #ffd8e0ff !important;">Company</th>
                         <th style="background-color: #ffd8e0ff !important;">Username</th>
                         <th style="background-color: #ffd8e0ff !important;">Gmail</th>
                         <th style="background-color: #ffd8e0ff !important;">No Telepon</th>
@@ -47,6 +48,7 @@
                     @forelse($users as $user)
                     <tr data-status="{{ $user->factive ? '1' : '0' }}">
 
+                        <td>{{ $user->ccompany ?? '-' }}</td>
                         <td>{{ $user->cemail }}</td>
                         <td>{{ $user->cmailaddress ?? '-' }}</td>
                         <td>{{ $user->cphone ?? '-' }}</td>
@@ -154,14 +156,14 @@
 
                     @empty
                     <tr>
-                        <td colspan="15" class="text-center text-muted">
+                        <td colspan="20" class="text-center text-muted">
                             Belum ada data user
                         </td>
                     </tr>
                     @endforelse
                     @else
                     <tr>
-                        <td colspan="15" class="text-center text-muted">
+                        <td colspan="20" class="text-center text-muted">
                             Data user tidak tersedia
                         </td>
                     </tr>
