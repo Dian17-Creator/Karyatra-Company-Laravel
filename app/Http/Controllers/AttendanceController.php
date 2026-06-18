@@ -12,9 +12,12 @@ class AttendanceController extends Controller
 {
     public function index()
     {
-        $departments = DB::table('mdepartment')
-            ->orderBy('cname')
-            ->get();
+        $authUser = Auth::user();
+        $query = DB::table('mdepartment')->orderBy('cname');
+        if ($authUser && $authUser->ccompany) {
+            $query->where('ccompany', $authUser->ccompany);
+        }
+        $departments = $query->get();
 
         return view('attendance.index', compact('departments'));
     }
@@ -66,6 +69,11 @@ class AttendanceController extends Controller
 
             $params = [$startDate, $endDate];
 
+            if ($user && $user->ccompany) {
+                $sql .= " AND u.ccompany = ? ";
+                $params[] = $user->ccompany;
+            }
+
             if (!empty($filterDept)) {
                 $sql .= " AND u.niddept = ? ";
                 $params[] = $filterDept;
@@ -99,6 +107,10 @@ class AttendanceController extends Controller
             $izinQuery = DB::table('mrequest')
                 ->join('muser', 'muser.nid', '=', 'mrequest.nuserid')
                 ->whereBetween('mrequest.drequest', [$startDate, $endDate]);
+
+            if ($user && $user->ccompany) {
+                $izinQuery->where('muser.ccompany', $user->ccompany);
+            }
 
             if (!empty($filterDept)) {
                 $izinQuery->where('muser.niddept', $filterDept);
@@ -271,6 +283,11 @@ class AttendanceController extends Controller
         ";
 
             $params = [$startDate, $startDate, $endDate];
+
+            if ($user && $user->ccompany) {
+                $sql .= " AND u.ccompany = ? ";
+                $params[] = $user->ccompany;
+            }
 
             if (!empty($filterDept)) {
                 $sql .= " AND u.niddept = ? ";

@@ -36,9 +36,15 @@ class UserExportController extends Controller
             abort(403);
         }
 
-        $users = muser::with(["faces", "department"])
-            ->orderBy("cname")
-            ->get();
+        $authUser = auth()->user();
+        $query = muser::with(["faces", "department"])
+            ->orderBy("cname");
+
+        if ($authUser && $authUser->ccompany) {
+            $query->where('ccompany', $authUser->ccompany);
+        }
+
+        $users = $query->get();
 
         foreach ($users as $user) {
             $photos = []; // ⬅️ array biasa

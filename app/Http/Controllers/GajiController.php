@@ -21,11 +21,25 @@ class GajiController extends Controller
         $selYear  = $request->year ?? now()->year;
         $selMonth = $request->month ?? now()->month;
 
+        $authUser = auth()->user();
+
         // master data
-        $users = muser::orderBy('cname')->get();
-        $departments = mdepartment::orderBy('cname')->get();
+        $usersQuery = muser::orderBy('cname');
+        $departmentsQuery = mdepartment::orderBy('cname');
+        $mtunjanganQuery = Mtunjangan::with('user')->orderByDesc('tanggal_berlaku');
+
+        if ($authUser && $authUser->ccompany) {
+            $usersQuery->where('ccompany', $authUser->ccompany);
+            $departmentsQuery->where('ccompany', $authUser->ccompany);
+            $mtunjanganQuery->whereHas('user', function ($q) use ($authUser) {
+                $q->where('ccompany', $authUser->ccompany);
+            });
+        }
+
+        $users = $usersQuery->get();
+        $departments = $departmentsQuery->get();
         $mrekening = Mrekening::orderBy('bank')->get();
-        $mtunjangan = Mtunjangan::with('user')->orderByDesc('tanggal_berlaku')->get();
+        $mtunjangan = $mtunjanganQuery->get();
 
         // optional department filter from query string
         $depIdRaw = $request->input('department_id', null);
@@ -40,9 +54,19 @@ class GajiController extends Controller
             ->where('period_month', $month)
             ->orderBy('user_id');
 
+        if ($authUser && $authUser->ccompany) {
+            $query->whereHas('user', function ($q) use ($authUser) {
+                $q->where('ccompany', $authUser->ccompany);
+            });
+        }
+
         if ($depId !== null) {
             // <-- IMPORTANT: muser primary key is `nid`, not `id` -> pluck('nid')
-            $userIds = muser::where('niddept', $depId)->pluck('nid')->toArray();
+            $userIdsQuery = muser::where('niddept', $depId);
+            if ($authUser && $authUser->ccompany) {
+                $userIdsQuery->where('ccompany', $authUser->ccompany);
+            }
+            $userIds = $userIdsQuery->pluck('nid')->toArray();
 
             if (count($userIds) === 0) {
                 // tidak ada user di departemen itu -> kembalikan result kosong
@@ -533,14 +557,26 @@ class GajiController extends Controller
         }
 
         try {
+            $authUser = auth()->user();
             $query = Csalary::with('user')
                 ->where('period_year', $year)
                 ->where('period_month', $month)
                 ->orderBy('user_id');
 
+            if ($authUser && $authUser->ccompany) {
+                $query->whereHas('user', function ($q) use ($authUser) {
+                    $q->where('ccompany', $authUser->ccompany);
+                });
+            }
+
             $userIds = [];
             if ($depId !== null) {
-                $userIds = muser::where('niddeptpayroll', $depId)->pluck('nid')->toArray();
+                $muserQuery = muser::where('niddeptpayroll', $depId);
+                if ($authUser && $authUser->ccompany) {
+                    $muserQuery->where('ccompany', $authUser->ccompany);
+                }
+                $userIds = $muserQuery->pluck('nid')->toArray();
+
                 if (count($userIds) === 0) {
                     $rows = collect([]);
                 } else {
@@ -551,13 +587,25 @@ class GajiController extends Controller
                 // if depIdRaw is non-numeric string (e.g. 'CK'), try to match it directly against muser.niddeptpayroll
                 if ($depIdRaw !== null && trim((string)$depIdRaw) !== '') {
                     // treat depIdRaw as string code/cname fallback
-                    $userIds = muser::where('niddeptpayroll', $depIdRaw)->pluck('nid')->toArray();
+                    $muserQuery = muser::where('niddeptpayroll', $depIdRaw);
+                    if ($authUser && $authUser->ccompany) {
+                        $muserQuery->where('ccompany', $authUser->ccompany);
+                    }
+                    $userIds = $muserQuery->pluck('nid')->toArray();
 
                     if (count($userIds) === 0) {
                         // try finding by department cname
-                        $dep = mdepartment::where('cname', $depIdRaw)->orWhere('code', $depIdRaw)->first();
+                        $depQuery = mdepartment::where('cname', $depIdRaw)->orWhere('code', $depIdRaw);
+                        if ($authUser && $authUser->ccompany) {
+                            $depQuery->where('ccompany', $authUser->ccompany);
+                        }
+                        $dep = $depQuery->first();
                         if ($dep) {
-                            $userIds = muser::where('niddeptpayroll', $dep->id)->pluck('nid')->toArray();
+                            $muserQuery2 = muser::where('niddeptpayroll', $dep->nid ?? $dep->id);
+                            if ($authUser && $authUser->ccompany) {
+                                $muserQuery2->where('ccompany', $authUser->ccompany);
+                            }
+                            $userIds = $muserQuery2->pluck('nid')->toArray();
                         }
                     }
 

@@ -18,20 +18,24 @@ class MrequestController extends Controller
     public function index()
     {
         $user = Auth::user();
+        $query = mrequest::with(['user']);
+
+        if ($user && $user->ccompany) {
+            $query->whereHas('user', function ($q) use ($user) {
+                $q->where('ccompany', $user->ccompany);
+            });
+        }
 
         if ($user->role === 'hrd') {
-            $requests = mrequest::with(['user'])
-                ->orderBy('dcreated', 'desc')
+            $requests = $query->orderBy('dcreated', 'desc')
                 ->get();
         } elseif ($user->role === 'captain') {
-            $requests = mrequest::with(['user'])
-                ->where('cstatus', 'pending')
+            $requests = $query->where('cstatus', 'pending')
                 ->orderBy('dcreated', 'desc')
                 ->get();
         } else {
             // pegawai biasa
-            $requests = mrequest::with(['user'])
-                ->where('nuserId', $user->nid)
+            $requests = $query->where('nuserId', $user->nid)
                 ->orderBy('dcreated', 'desc')
                 ->get();
         }
