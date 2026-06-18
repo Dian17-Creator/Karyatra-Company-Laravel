@@ -13,7 +13,14 @@ class TdeptlokasiController extends Controller
      */
     public function index(Request $request)
     {
-        $locations = Tdeptlokasi::with('department')->orderBy('nid', 'desc')->get();
+        $user = auth()->user() ?? auth('owner')->user();
+        $query = Tdeptlokasi::with('department');
+
+        if ($user && $user->ccompany) {
+            $query->where('ccompany', $user->ccompany);
+        }
+
+        $locations = $query->orderBy('nid', 'desc')->get();
 
         if ($request->wantsJson() || $request->is('api/*')) {
             return response()->json([
@@ -40,6 +47,12 @@ class TdeptlokasiController extends Controller
 
         // Auto-fill dcreated with current date & time
         $validated['dcreated'] = now();
+
+        // Get ccompany from logged-in user
+        $user = auth()->user() ?? auth('owner')->user();
+        if ($user) {
+            $validated['ccompany'] = $user->ccompany;
+        }
 
         $location = Tdeptlokasi::create($validated);
 
