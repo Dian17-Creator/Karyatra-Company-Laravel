@@ -6,6 +6,7 @@ use App\Models\muser;
 use App\Models\mdepartment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 
 class MasterUserController extends Controller
 {
@@ -14,8 +15,14 @@ class MasterUserController extends Controller
      */
     public function index()
     {
-        // Ambil semua user dengan relasi departemen
-        $users = muser::with('department')->get();
+        $authUser = Auth::user();
+        $query = muser::with('department');
+        
+        if ($authUser && $authUser->ccompany) {
+            $query->where('ccompany', $authUser->ccompany);
+        }
+        
+        $users = $query->get();
 
         return view('masteruser.index', compact('users'));
     }
@@ -25,7 +32,14 @@ class MasterUserController extends Controller
      */
     public function create()
     {
-        $departments = mdepartment::all();
+        $authUser = Auth::user();
+        $query = mdepartment::query();
+        
+        if ($authUser && $authUser->ccompany) {
+            $query->where('ccompany', $authUser->ccompany);
+        }
+        
+        $departments = $query->get();
         return view('masteruser.create', compact('departments'));
     }
 
@@ -34,6 +48,7 @@ class MasterUserController extends Controller
      */
     public function store(Request $request)
     {
+        $authUser = Auth::user();
         $request->validate([
             'cemail' => 'required|email|unique:muser,cemail',
             'cname' => 'required|string|max:255',
@@ -49,6 +64,7 @@ class MasterUserController extends Controller
             'fsuper' => $request->fsuper ?? 0,
             'fsenior' => $request->fsuper ?? 0,
             'niddept' => $request->niddept,
+            'ccompany' => $authUser ? $authUser->ccompany : null,
         ]);
 
         return redirect()->route('masteruser.index')->with('success', 'User berhasil ditambahkan!');
@@ -59,8 +75,21 @@ class MasterUserController extends Controller
      */
     public function edit($id)
     {
-        $user = muser::findOrFail($id);
-        $departments = mdepartment::all();
+        $authUser = Auth::user();
+        $userQuery = muser::query();
+        
+        if ($authUser && $authUser->ccompany) {
+            $userQuery->where('ccompany', $authUser->ccompany);
+        }
+        
+        $user = $userQuery->findOrFail($id);
+        
+        $deptQuery = mdepartment::query();
+        if ($authUser && $authUser->ccompany) {
+            $deptQuery->where('ccompany', $authUser->ccompany);
+        }
+        
+        $departments = $deptQuery->get();
         return view('masteruser.edit', compact('user', 'departments'));
     }
 
@@ -69,7 +98,14 @@ class MasterUserController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $user = muser::findOrFail($id);
+        $authUser = Auth::user();
+        $userQuery = muser::query();
+        
+        if ($authUser && $authUser->ccompany) {
+            $userQuery->where('ccompany', $authUser->ccompany);
+        }
+        
+        $user = $userQuery->findOrFail($id);
 
         $request->validate([
             'cemail' => 'required|email|unique:muser,cemail,' . $id . ',nid',
@@ -100,7 +136,14 @@ class MasterUserController extends Controller
      */
     public function destroy($id)
     {
-        $user = muser::findOrFail($id);
+        $authUser = Auth::user();
+        $userQuery = muser::query();
+        
+        if ($authUser && $authUser->ccompany) {
+            $userQuery->where('ccompany', $authUser->ccompany);
+        }
+        
+        $user = $userQuery->findOrFail($id);
         $user->delete();
 
         return redirect()->route('masteruser.index')->with('success', 'User berhasil dihapus!');
@@ -108,8 +151,14 @@ class MasterUserController extends Controller
 
     public function show($id)
     {
-        // Cari data user berdasarkan NID
-        $user = \DB::table('muser')->where('nid', $id)->first();
+        $authUser = Auth::user();
+        $query = \DB::table('muser')->where('nid', $id);
+        
+        if ($authUser && $authUser->ccompany) {
+            $query->where('ccompany', $authUser->ccompany);
+        }
+        
+        $user = $query->first();
 
         if (!$user) {
             abort(404, 'Data user tidak ditemukan.');

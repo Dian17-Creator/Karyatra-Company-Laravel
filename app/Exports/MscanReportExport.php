@@ -40,10 +40,13 @@ class MscanReportExport implements WithMultipleSheets
     public function sheets(): array
     {
         $sheets = [];
+        $authUser = auth()->user() ?? auth('owner')->user();
 
-        $departments = DB::table('mdepartment')
-            ->orderBy('cname')
-            ->get();
+        $departmentsQuery = DB::table('mdepartment')->orderBy('cname');
+        if ($authUser && $authUser->ccompany) {
+            $departmentsQuery->where('ccompany', $authUser->ccompany);
+        }
+        $departments = $departmentsQuery->get();
 
         foreach ($departments as $dept) {
             $sheets[] = new MscanReportSheet(
@@ -109,6 +112,7 @@ class MscanReportSheet implements
      * ========================= */
     public function collection()
     {
+        $authUser = auth()->user() ?? auth('owner')->user();
         $sql = "
         SELECT
             scan.nuserid,
@@ -134,14 +138,17 @@ class MscanReportSheet implements
             ON u.nid = scan.nuserid
         WHERE DATE(scan.dscanned) BETWEEN ? AND ?
         AND u.niddept = ?
-        ORDER BY scan.nuserid, scan.dscanned
     ";
 
-        $rows = DB::select($sql, [
-            $this->start,
-            $this->end,
-            $this->dept
-        ]);
+        $params = [$this->start, $this->end, $this->dept];
+        if ($authUser && $authUser->ccompany) {
+            $sql .= " AND u.ccompany = ? ";
+            $params[] = $authUser->ccompany;
+        }
+
+        $sql .= " ORDER BY scan.nuserid, scan.dscanned";
+
+        $rows = DB::select($sql, $params);
 
         $grouped = collect($rows)->groupBy(function ($row) {
             return $row->nuserid . '_' . date('Y-m-d', strtotime($row->dscanned));
@@ -299,11 +306,16 @@ class MscanReportSheet implements
  * DATA IZIN
  * ========================= */
 
-        $izin = DB::table('mrequest')
+        $izinQuery = DB::table('mrequest')
             ->join('muser', 'muser.nid', '=', 'mrequest.nuserid')
             ->whereBetween('mrequest.drequest', [$this->start, $this->end])
-            ->where('muser.niddept', $this->dept)
-            ->select(
+            ->where('muser.niddept', $this->dept);
+
+        if ($authUser && $authUser->ccompany) {
+            $izinQuery->where('muser.ccompany', $authUser->ccompany);
+        }
+
+        $izin = $izinQuery->select(
                 'muser.cname',
                 'mrequest.drequest as date',
                 'mrequest.creason as alasan'

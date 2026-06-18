@@ -21,10 +21,17 @@ class UserExport implements
 
     public function __construct()
     {
-        $this->users = muser::with([
+        $authUser = auth()->user();
+        $query = muser::with([
             'department',
             'rekening'
-        ])->orderBy('cname')->get();
+        ])->orderBy('cname');
+
+        if ($authUser && $authUser->ccompany) {
+            $query->where('ccompany', $authUser->ccompany);
+        }
+
+        $this->users = $query->get();
     }
 
     /**

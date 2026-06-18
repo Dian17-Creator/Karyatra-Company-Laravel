@@ -25,6 +25,10 @@ class BackofficeController extends Controller
         $authUser = Auth::user();
         $query = muser::with(['department', 'rekening'])->orderBy('cname');
 
+        if ($authUser && $authUser->ccompany) {
+            $query->where('ccompany', $authUser->ccompany);
+        }
+
         if (!$authUser->fhrd) {
             $query->where('niddept', $authUser->niddept);
         }
@@ -53,7 +57,13 @@ class BackofficeController extends Controller
         }
 
         $users = $query->paginate(10)->withQueryString();
-        $departments = mdepartment::orderBy('nid')->get();
+        
+        $departmentsQuery = mdepartment::orderBy('nid');
+        if ($authUser && $authUser->ccompany) {
+            $departmentsQuery->where('ccompany', $authUser->ccompany);
+        }
+        $departments = $departmentsQuery->get();
+        
         $rekenings = Mrekening::orderBy('id')->get();
 
         $user = Auth::user() ?? Auth::guard('owner')->user();
@@ -83,13 +93,15 @@ class BackofficeController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
-        $admins = muser::where(function ($q) {
+        $adminsQuery = muser::where(function ($q) {
             $q->where('fadmin', 1)
                 ->orWhere('fsuper', 1)
                 ->orWhere('fhrd', 1);
-        })
-            ->orderBy('cname')
-            ->get();
+        });
+        if ($authUser && $authUser->ccompany) {
+            $adminsQuery->where('ccompany', $authUser->ccompany);
+        }
+        $admins = $adminsQuery->orderBy('cname')->get();
 
         return view('backoffice.index', compact(
             'users',
@@ -150,6 +162,7 @@ class BackofficeController extends Controller
             'niddeptpayroll' => $request->input('niddeptpayroll'),
             'dcreated'       => now(),
             'finger_id'      => $request->input('finger_id') ?: null,
+            'ccompany'       => Auth::user() ? Auth::user()->ccompany : null,
         ]);
 
         $bankInput     = $request->input('bank');
@@ -299,11 +312,18 @@ class BackofficeController extends Controller
             abort(403, 'Anda tidak memiliki izin untuk menambah departemen.');
         }
 
-        $request->validate([
-            'cname' => 'required|string|max:255|unique:mdepartment,cname',
-        ]);
-
         $user = Auth::user() ?? Auth::guard('owner')->user();
+
+        $request->validate([
+            'cname' => [
+                'required',
+                'string',
+                'max:255',
+                \Illuminate\Validation\Rule::unique('mdepartment', 'cname')->where(function ($query) use ($user) {
+                    return $query->where('ccompany', $user ? $user->ccompany : null);
+                })
+            ],
+        ]);
 
         mdepartment::create([
             'cname' => $request->cname,
