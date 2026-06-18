@@ -13,6 +13,7 @@ class mdepartment extends Model
     // Tambahkan ini
     protected $fillable = [
         'cname',
+        'ccompany',
     ];
 
     public function users()

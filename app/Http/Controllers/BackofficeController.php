@@ -56,9 +56,15 @@ class BackofficeController extends Controller
         $departments = mdepartment::orderBy('nid')->get();
         $rekenings = Mrekening::orderBy('id')->get();
 
-        $deptLocations = Tdeptlokasi::with('department')
-            ->orderBy('ndeptid', 'asc')
-            ->paginate(10, ['*'], 'dept_page')
+        $user = Auth::user() ?? Auth::guard('owner')->user();
+        $deptLocationsQuery = Tdeptlokasi::with('department')
+            ->orderBy('ndeptid', 'asc');
+
+        if ($user && $user->ccompany) {
+            $deptLocationsQuery->where('ccompany', $user->ccompany);
+        }
+
+        $deptLocations = $deptLocationsQuery->paginate(10, ['*'], 'dept_page')
             ->withQueryString();
 
         if ($request->ajax()) {
@@ -297,8 +303,11 @@ class BackofficeController extends Controller
             'cname' => 'required|string|max:255|unique:mdepartment,cname',
         ]);
 
+        $user = Auth::user() ?? Auth::guard('owner')->user();
+
         mdepartment::create([
             'cname' => $request->cname,
+            'ccompany' => $user ? $user->ccompany : null,
         ]);
 
         return back()->with('success', 'Departemen berhasil ditambahkan.');

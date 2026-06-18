@@ -20,6 +20,7 @@ class Tdeptlokasi extends Model
         'nlng',
         'nradius',
         'dcreated',
+        'ccompany',
     ];
 
     protected $casts = [
