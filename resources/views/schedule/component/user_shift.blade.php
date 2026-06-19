@@ -117,8 +117,9 @@
                                 $hue = abs($hash) % 360;
                                 $badgeStyle = "background-color: hsl({$hue}, 70%, 92%); color: hsl({$hue}, 80%, 24%); border: 1px solid hsl({$hue}, 50%, 82%);";
                                 }
+                                $styleAttr = 'style="' . $badgeStyle . ' font-size: 0.8rem; border-radius: 6px; letter-spacing: 0.3px;"';
                                 @endphp
-                                <span class="badge fw-semibold px-2.5 py-1.5" style="{{ $badgeStyle }} font-size: 0.8rem; border-radius: 6px; letter-spacing: 0.3px;">
+                                <span class="badge fw-semibold px-2.5 py-1.5" {!! $styleAttr !!}>
                                     {{ $shiftName }}
                                 </span>
                             </td>

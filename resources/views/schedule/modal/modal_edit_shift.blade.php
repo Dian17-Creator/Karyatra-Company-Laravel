@@ -43,7 +43,7 @@
 
                     {{-- FLEXI --}}
                     <div class="flexi-box-{{ $shift->nid }}"
-                        style="{{ $shift->ctype === 'flexi' ? '' : 'display:none' }}">
+                        @if($shift->ctype !== 'flexi') style="display:none" @endif>
                         <div class="mb-3">
                             <label class="form-label-custom">Total Jam Kerja (per hari)</label>
                             <input type="number" name="ctotal" class="form-control-custom" min="1" max="24"
@@ -53,7 +53,7 @@
 
                     {{-- NORMAL --}}
                     <div class="normal-box-{{ $shift->nid }}"
-                        style="{{ $shift->ctype === 'normal' ? '' : 'display:none' }}">
+                        @if($shift->ctype !== 'normal') style="display:none" @endif>
 
                         <div class="row">
                             <div class="col-md-6 mb-3">

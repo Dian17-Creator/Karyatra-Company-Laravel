@@ -8,6 +8,7 @@ use App\Models\Tusercontract;
 use App\Models\MasterSchedule;
 use App\Models\UserSchedule;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use App\Jobs\CalculatePayrollJob;
 use Maatwebsite\Excel\Facades\Excel;
@@ -24,7 +25,7 @@ class ScheduleController extends Controller
      */
     public function index()
     {
-        $authUser = auth()->user();
+        $authUser = Auth::user();
 
         // Hanya superadmin bisa lihat semua shift
         $masters = [];
@@ -200,13 +201,13 @@ class ScheduleController extends Controller
             'dstart2'  => $request->ctype === 'normal' ? $request->dstart2 : null,
             'dend2'    => $request->ctype === 'normal' ? $request->dend2 : null,
             'dcreated' => now(),
-            'ccompany' => auth()->user() ? auth()->user()->ccompany : null,
+            'ccompany' => Auth::user() ? Auth::user()->ccompany : null,
         ]);
 
         return back()->with('success', '✅ Shift berhasil ditambahkan.');
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, int $id)
     {
         $request->validate([
             'cname' => 'required|string|max:255',
@@ -221,7 +222,7 @@ class ScheduleController extends Controller
         ]);
 
         // 🔴 INI YANG KAMU LUPA
-        $authUser = auth()->user();
+        $authUser = Auth::user();
         $query = MasterSchedule::query();
         if ($authUser && $authUser->ccompany) {
             $query->where('ccompany', $authUser->ccompany);
@@ -287,9 +288,9 @@ class ScheduleController extends Controller
         return back()->with('success', '✅ Shift berhasil diperbarui.');
     }
 
-    public function destroy($id)
+    public function destroy(int $id)
     {
-        $authUser = auth()->user();
+        $authUser = Auth::user();
         $query = MasterSchedule::query();
         if ($authUser && $authUser->ccompany) {
             $query->where('ccompany', $authUser->ccompany);
@@ -318,7 +319,7 @@ class ScheduleController extends Controller
         $end->modify('+1 day');
 
         $period = new DatePeriod($start, new DateInterval('P1D'), $end);
-        $authUser = auth()->user();
+        $authUser = Auth::user();
         $query = MasterSchedule::orderBy('cname');
         if ($authUser && $authUser->ccompany) {
             $query->where('ccompany', $authUser->ccompany);
@@ -351,7 +352,7 @@ class ScheduleController extends Controller
                 continue;
             }
 
-            $authUser = auth()->user();
+            $authUser = Auth::user();
             $query = MasterSchedule::query();
             if ($authUser && $authUser->ccompany) {
                 $query->where('ccompany', $authUser->ccompany);
@@ -387,7 +388,7 @@ class ScheduleController extends Controller
        🔸 API UNTUK MOBILE
     ========================================================== */
 
-    public function apiUserSchedule($userId)
+    public function apiUserSchedule(int $userId)
     {
         if (!$userId) {
             return response()->json([
@@ -447,7 +448,7 @@ class ScheduleController extends Controller
         ]);
     }
 
-    public function apiTodayShift($userId)
+    public function apiTodayShift(int $userId)
     {
         if (!$userId) {
             return response()->json([
@@ -517,7 +518,7 @@ class ScheduleController extends Controller
         $nominal = (float)$nominal;
 
         // Nonaktifkan kontrak aktif sebelumnya
-        \DB::table('tusercontract')
+        DB::table('tusercontract')
             ->where('nuserid', $request->nuserid)
             ->where('cstatus', 'active')
             ->update(['cstatus' => 'terminated']);
@@ -549,7 +550,7 @@ class ScheduleController extends Controller
     }
 
     // Update kontrak
-    public function updateContract(Request $request, $id)
+    public function updateContract(Request $request, int $id)
     {
         $contract = Tusercontract::findOrFail($id);
 
@@ -592,7 +593,7 @@ class ScheduleController extends Controller
             ->with('success', 'Kontrak berhasil diperbarui & payroll tersinkron!');
     }
     // Hapus kontrak
-    public function destroyContract($id)
+    public function destroyContract(int $id)
     {
         $contract = Tusercontract::findOrFail($id);
         $contract->delete();
@@ -638,7 +639,7 @@ class ScheduleController extends Controller
         );
     }
 
-    private function contractColor($c)
+    private function contractColor(Tusercontract $c)
     {
         if ($c->remaining_days <= 0) {
             return '#dc3545';
@@ -655,7 +656,7 @@ class ScheduleController extends Controller
     }
 
     // helper Overlap
-    private function timeOverlap($startA, $endA, $startB, $endB)
+    private function timeOverlap(int $startA, int $endA, int $startB, int $endB)
     {
         return $startA < $endB && $endA > $startB;
     }
@@ -742,9 +743,9 @@ class ScheduleController extends Controller
         );
     }
 
-    public function destroyUserSchedule($id)
+    public function destroyUserSchedule(int $id)
     {
-        $authUser = auth()->user();
+        $authUser = Auth::user();
         $query = UserSchedule::query();
         if ($authUser && $authUser->ccompany) {
             $query->whereHas('user', function ($q) use ($authUser) {
@@ -757,9 +758,9 @@ class ScheduleController extends Controller
         return redirect()->back()->with('success', '🗑 Jadwal shift user berhasil dihapus.');
     }
 
-    public function updateUserSchedule(Request $request, $id)
+    public function updateUserSchedule(Request $request, int $id)
     {
-        $authUser = auth()->user();
+        $authUser = Auth::user();
         $query = UserSchedule::query();
         if ($authUser && $authUser->ccompany) {
             $query->whereHas('user', function ($q) use ($authUser) {
