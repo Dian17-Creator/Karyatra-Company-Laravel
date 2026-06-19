@@ -1,16 +1,16 @@
  <div class="card mb-4">
-     <div class="card-header bg-dark text-white">Daftar Shift</div>
+     <div class="card-header bg-danger text-white">Daftar Shift</div>
      <div class="card-body">
          <table class="table table-bordered align-middle text-center">
              <thead class="table-success">
                  <tr>
-                     <th>Nama Shift</th>
-                     <th>Total Jam Kerja</th>
-                     <th>Mulai</th>
-                     <th>Selesai</th>
-                     <th>Mulai (Split)</th>
-                     <th>Selesai (Split)</th>
-                     <th>Aksi</th>
+                     <th style="background-color: #ffd8e0ff !important;">Nama Shift</th>
+                     <th style="background-color: #ffd8e0ff !important;">Total Jam Kerja</th>
+                     <th style="background-color: #ffd8e0ff !important;">Mulai</th>
+                     <th style="background-color: #ffd8e0ff !important;">Selesai</th>
+                     <th style="background-color: #ffd8e0ff !important;">Mulai (Split)</th>
+                     <th style="background-color: #ffd8e0ff !important;">Selesai (Split)</th>
+                     <th style="background-color: #ffd8e0ff !important;">Aksi</th>
                  </tr>
              </thead>
              <tbody>
@@ -57,10 +57,6 @@
                          </div>
                      </td>
                  </tr>
-
-
-                 {{-- Modal Edit Shift --}}
-                 @include('schedule.modal.modal_edit_shift')
                  @empty
                  <tr>
                      <td colspan="7" class="text-muted">Belum ada data shift</td>
@@ -70,3 +66,8 @@
          </table>
      </div>
  </div>
+
+ {{-- Modal Edit Shift rendered safely outside the table --}}
+ @foreach($masters as $shift)
+ @include('schedule.modal.modal_edit_shift')
+ @endforeach
