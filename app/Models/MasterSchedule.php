@@ -20,6 +20,7 @@ class MasterSchedule extends Model
         'dstart2',
         'dend2',
         'dcreated',
+        'ccompany',
     ];
 
     protected $casts = [
