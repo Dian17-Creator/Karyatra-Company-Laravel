@@ -52,7 +52,7 @@ class BackofficeController extends Controller
         }
 
         $status = $request->input('status', '1');
-        if ($status !== '') {
+        if ($status !== null && $status !== '') {
             $query->where('factive', $status);
         }
 
