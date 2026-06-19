@@ -29,7 +29,11 @@ class ScheduleController extends Controller
         // Hanya superadmin bisa lihat semua shift
         $masters = [];
         if ($authUser->fsuper == 1) {
-            $masters = MasterSchedule::orderBy('cname')->get();
+            $query = MasterSchedule::orderBy('cname');
+            if ($authUser->ccompany) {
+                $query->where('ccompany', $authUser->ccompany);
+            }
+            $masters = $query->get();
         }
 
         // Filter user berdasarkan departemen
@@ -127,6 +131,7 @@ class ScheduleController extends Controller
             'dstart2'  => $request->ctype === 'normal' ? $request->dstart2 : null,
             'dend2'    => $request->ctype === 'normal' ? $request->dend2 : null,
             'dcreated' => now(),
+            'ccompany' => auth()->user() ? auth()->user()->ccompany : null,
         ]);
 
         return back()->with('success', '✅ Shift berhasil ditambahkan.');
@@ -147,7 +152,12 @@ class ScheduleController extends Controller
         ]);
 
         // 🔴 INI YANG KAMU LUPA
-        $shift = MasterSchedule::findOrFail($id);
+        $authUser = auth()->user();
+        $query = MasterSchedule::query();
+        if ($authUser && $authUser->ccompany) {
+            $query->where('ccompany', $authUser->ccompany);
+        }
+        $shift = $query->findOrFail($id);
 
         // ================= VALIDASI SPLIT NORMAL =================
         if ($request->ctype === 'normal') {
@@ -210,7 +220,12 @@ class ScheduleController extends Controller
 
     public function destroy($id)
     {
-        $sched = MasterSchedule::findOrFail($id);
+        $authUser = auth()->user();
+        $query = MasterSchedule::query();
+        if ($authUser && $authUser->ccompany) {
+            $query->where('ccompany', $authUser->ccompany);
+        }
+        $sched = $query->findOrFail($id);
         $sched->delete();
 
         return redirect()->back()->with('success', '🗑 Shift berhasil dihapus.');
@@ -234,7 +249,12 @@ class ScheduleController extends Controller
         $end->modify('+1 day');
 
         $period = new DatePeriod($start, new DateInterval('P1D'), $end);
-        $masters = MasterSchedule::orderBy('cname')->get();
+        $authUser = auth()->user();
+        $query = MasterSchedule::orderBy('cname');
+        if ($authUser && $authUser->ccompany) {
+            $query->where('ccompany', $authUser->ccompany);
+        }
+        $masters = $query->get();
         $user = muser::find($nuserid);
 
         $existingSchedules = UserSchedule::where('nuserid', $nuserid)
@@ -262,7 +282,12 @@ class ScheduleController extends Controller
                 continue;
             }
 
-            $master = MasterSchedule::find($schedId);
+            $authUser = auth()->user();
+            $query = MasterSchedule::query();
+            if ($authUser && $authUser->ccompany) {
+                $query->where('ccompany', $authUser->ccompany);
+            }
+            $master = $query->find($schedId);
             if (!$master) {
                 continue;
             }
