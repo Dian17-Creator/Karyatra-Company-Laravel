@@ -58,9 +58,9 @@ $deptLocations = $deptLocations ?? collect();
 
             <!-- Filter Status User -->
             <select id="statusFilter" class="form-select form-select-sm" style="max-width:115px;">
-                <option value="1" {{ request('status', '1') == '1' ? 'selected' : '' }}>User Aktif</option>
+                <option value="1" {{ (!request()->has('status') || request('status') === '1') ? 'selected' : '' }}>User Aktif</option>
                 <option value="0" {{ request('status') === '0' ? 'selected' : '' }}>User Nonaktif</option>
-                <option value="" {{ request('status') === '' ? 'selected' : '' }}>Semua User</option>
+                <option value="" {{ (request()->has('status') && (request('status') === null || request('status') === '')) ? 'selected' : '' }}>Semua User</option>
             </select>
 
             <!-- Search -->
