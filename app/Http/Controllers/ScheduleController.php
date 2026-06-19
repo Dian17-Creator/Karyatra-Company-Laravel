@@ -29,13 +29,21 @@ class ScheduleController extends Controller
         // Hanya superadmin bisa lihat semua shift
         $masters = [];
         if ($authUser->fsuper == 1) {
-            $masters = MasterSchedule::orderBy('cname')->get();
+            $mastersQuery = MasterSchedule::orderBy('cname');
+            if ($authUser->ccompany) {
+                $mastersQuery->where('ccompany', $authUser->ccompany);
+            }
+            $masters = $mastersQuery->get();
         }
 
         // Filter user berdasarkan departemen
         $query = muser::with('department')
             ->where('factive', 1)
             ->orderBy('cname');
+
+        if ($authUser->ccompany) {
+            $query->where('ccompany', $authUser->ccompany);
+        }
 
         // ✅ HR lihat semua
         // ✅ Super & Captain hanya departemen sendiri
@@ -46,16 +54,26 @@ class ScheduleController extends Controller
         $users = $query->get();
 
         // Ambil semua kontrak kerja
-        $contracts = Tusercontract::with('user')
-            ->orderBy('dstart', 'desc')
-            ->get();
+        $contractsQuery = Tusercontract::with('user')
+            ->orderBy('dstart', 'desc');
+
+        if ($authUser->ccompany) {
+            $contractsQuery->whereHas('user', function ($q) use ($authUser) {
+                $q->where('ccompany', $authUser->ccompany);
+            });
+        }
+
+        $contracts = $contractsQuery->get();
 
         // Fetch departments based on HRD status
-        if (!$authUser->fhrd) {
-            $departments = \App\Models\mdepartment::where('nid', $authUser->niddept)->orderBy('cname')->get();
-        } else {
-            $departments = \App\Models\mdepartment::orderBy('cname')->get();
+        $departmentsQuery = \App\Models\mdepartment::orderBy('cname');
+        if ($authUser->ccompany) {
+            $departmentsQuery->where('ccompany', $authUser->ccompany);
         }
+        if (!$authUser->fhrd) {
+            $departmentsQuery->where('nid', $authUser->niddept);
+        }
+        $departments = $departmentsQuery->get();
 
         // Default tanggal mengikuti tanggal sekarang saja
         $defaultStartDate = now()->toDateString();
@@ -69,6 +87,12 @@ class ScheduleController extends Controller
             ->orderBy('dwork', 'desc')
             ->orderBy('nid', 'asc')
             ->whereBetween('dwork', [$startDate, $endDate]);
+
+        if ($authUser->ccompany) {
+            $scheduleQuery->whereHas('user', function ($q) use ($authUser) {
+                $q->where('ccompany', $authUser->ccompany);
+            });
+        }
 
         // Apply department filter if not HRD
         if (!$authUser->fhrd) {
@@ -89,7 +113,11 @@ class ScheduleController extends Controller
         $userSchedules = $scheduleQuery->paginate(15)->withQueryString();
 
         // Fetch all master schedules for dropdowns
-        $allMasters = MasterSchedule::orderBy('cname')->get();
+        $allMastersQuery = MasterSchedule::orderBy('cname');
+        if ($authUser->ccompany) {
+            $allMastersQuery->where('ccompany', $authUser->ccompany);
+        }
+        $allMasters = $allMastersQuery->get();
 
         if (request()->ajax()) {
             return view('schedule.component.user_shift', compact('masters', 'users', 'authUser', 'contracts', 'userSchedules', 'allMasters', 'departments', 'startDate', 'endDate'))->render();
@@ -193,7 +221,12 @@ class ScheduleController extends Controller
         ]);
 
         // 🔴 INI YANG KAMU LUPA
-        $shift = MasterSchedule::findOrFail($id);
+        $authUser = auth()->user();
+        $query = MasterSchedule::query();
+        if ($authUser && $authUser->ccompany) {
+            $query->where('ccompany', $authUser->ccompany);
+        }
+        $shift = $query->findOrFail($id);
 
         // ================= VALIDASI SPLIT NORMAL =================
         if ($request->ctype === 'normal') {
@@ -256,7 +289,12 @@ class ScheduleController extends Controller
 
     public function destroy($id)
     {
-        $sched = MasterSchedule::findOrFail($id);
+        $authUser = auth()->user();
+        $query = MasterSchedule::query();
+        if ($authUser && $authUser->ccompany) {
+            $query->where('ccompany', $authUser->ccompany);
+        }
+        $sched = $query->findOrFail($id);
         $sched->delete();
 
         return redirect()->back()->with('success', '🗑 Shift berhasil dihapus.');
@@ -280,7 +318,12 @@ class ScheduleController extends Controller
         $end->modify('+1 day');
 
         $period = new DatePeriod($start, new DateInterval('P1D'), $end);
-        $masters = MasterSchedule::orderBy('cname')->get();
+        $authUser = auth()->user();
+        $query = MasterSchedule::orderBy('cname');
+        if ($authUser && $authUser->ccompany) {
+            $query->where('ccompany', $authUser->ccompany);
+        }
+        $masters = $query->get();
         $user = muser::find($nuserid);
 
         $existingSchedules = UserSchedule::where('nuserid', $nuserid)
@@ -308,7 +351,12 @@ class ScheduleController extends Controller
                 continue;
             }
 
-            $master = MasterSchedule::find($schedId);
+            $authUser = auth()->user();
+            $query = MasterSchedule::query();
+            if ($authUser && $authUser->ccompany) {
+                $query->where('ccompany', $authUser->ccompany);
+            }
+            $master = $query->find($schedId);
             if (!$master) {
                 continue;
             }
@@ -696,7 +744,14 @@ class ScheduleController extends Controller
 
     public function destroyUserSchedule($id)
     {
-        $sched = UserSchedule::findOrFail($id);
+        $authUser = auth()->user();
+        $query = UserSchedule::query();
+        if ($authUser && $authUser->ccompany) {
+            $query->whereHas('user', function ($q) use ($authUser) {
+                $q->where('ccompany', $authUser->ccompany);
+            });
+        }
+        $sched = $query->findOrFail($id);
         $sched->delete();
 
         return redirect()->back()->with('success', '🗑 Jadwal shift user berhasil dihapus.');
@@ -704,13 +759,24 @@ class ScheduleController extends Controller
 
     public function updateUserSchedule(Request $request, $id)
     {
-        $sched = UserSchedule::findOrFail($id);
+        $authUser = auth()->user();
+        $query = UserSchedule::query();
+        if ($authUser && $authUser->ccompany) {
+            $query->whereHas('user', function ($q) use ($authUser) {
+                $q->where('ccompany', $authUser->ccompany);
+            });
+        }
+        $sched = $query->findOrFail($id);
 
         $request->validate([
             'nidsched' => 'required|exists:mschedule,nid',
         ]);
 
-        $master = MasterSchedule::find($request->nidsched);
+        $masterQuery = MasterSchedule::query();
+        if ($authUser && $authUser->ccompany) {
+            $masterQuery->where('ccompany', $authUser->ccompany);
+        }
+        $master = $masterQuery->find($request->nidsched);
         if (!$master) {
             return back()->withErrors(['message' => 'Shift tidak ditemukan']);
         }
