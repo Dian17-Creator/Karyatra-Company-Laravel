@@ -29,11 +29,7 @@ class ScheduleController extends Controller
         // Hanya superadmin bisa lihat semua shift
         $masters = [];
         if ($authUser->fsuper == 1) {
-            $query = MasterSchedule::orderBy('cname');
-            if ($authUser->ccompany) {
-                $query->where('ccompany', $authUser->ccompany);
-            }
-            $masters = $query->get();
+            $masters = MasterSchedule::orderBy('cname')->get();
         }
 
         // Filter user berdasarkan departemen
@@ -54,7 +50,52 @@ class ScheduleController extends Controller
             ->orderBy('dstart', 'desc')
             ->get();
 
-        return view('schedule.index', compact('masters', 'users', 'authUser', 'contracts'));
+        // Fetch departments based on HRD status
+        if (!$authUser->fhrd) {
+            $departments = \App\Models\mdepartment::where('nid', $authUser->niddept)->orderBy('cname')->get();
+        } else {
+            $departments = \App\Models\mdepartment::orderBy('cname')->get();
+        }
+
+        // Default tanggal mengikuti tanggal sekarang saja
+        $defaultStartDate = now()->toDateString();
+        $defaultEndDate   = now()->toDateString();
+
+        $startDate = request('filter_start_date', $defaultStartDate);
+        $endDate   = request('filter_end_date', $defaultEndDate);
+
+        // Query User Schedules
+        $scheduleQuery = UserSchedule::with(['user.department', 'masterSchedule'])
+            ->orderBy('dwork', 'desc')
+            ->orderBy('nid', 'asc')
+            ->whereBetween('dwork', [$startDate, $endDate]);
+
+        // Apply department filter if not HRD
+        if (!$authUser->fhrd) {
+            $allowedUserIds = $users->pluck('nid')->toArray();
+            $scheduleQuery->whereIn('nuserid', $allowedUserIds);
+        }
+
+        // Apply filters from request if present
+        if (request()->filled('filter_user_id')) {
+            $scheduleQuery->where('nuserid', request('filter_user_id'));
+        }
+
+        if (request()->filled('filter_dept_id')) {
+            $deptUserIdQuery = muser::where('niddept', request('filter_dept_id'))->pluck('nid')->toArray();
+            $scheduleQuery->whereIn('nuserid', $deptUserIdQuery);
+        }
+
+        $userSchedules = $scheduleQuery->paginate(15)->withQueryString();
+
+        // Fetch all master schedules for dropdowns
+        $allMasters = MasterSchedule::orderBy('cname')->get();
+
+        if (request()->ajax()) {
+            return view('schedule.component.user_shift', compact('masters', 'users', 'authUser', 'contracts', 'userSchedules', 'allMasters', 'departments', 'startDate', 'endDate'))->render();
+        }
+
+        return view('schedule.index', compact('masters', 'users', 'authUser', 'contracts', 'userSchedules', 'allMasters', 'departments', 'startDate', 'endDate'));
     }
 
     /* ==========================================================
@@ -152,12 +193,7 @@ class ScheduleController extends Controller
         ]);
 
         // 🔴 INI YANG KAMU LUPA
-        $authUser = auth()->user();
-        $query = MasterSchedule::query();
-        if ($authUser && $authUser->ccompany) {
-            $query->where('ccompany', $authUser->ccompany);
-        }
-        $shift = $query->findOrFail($id);
+        $shift = MasterSchedule::findOrFail($id);
 
         // ================= VALIDASI SPLIT NORMAL =================
         if ($request->ctype === 'normal') {
@@ -220,12 +256,7 @@ class ScheduleController extends Controller
 
     public function destroy($id)
     {
-        $authUser = auth()->user();
-        $query = MasterSchedule::query();
-        if ($authUser && $authUser->ccompany) {
-            $query->where('ccompany', $authUser->ccompany);
-        }
-        $sched = $query->findOrFail($id);
+        $sched = MasterSchedule::findOrFail($id);
         $sched->delete();
 
         return redirect()->back()->with('success', '🗑 Shift berhasil dihapus.');
@@ -249,12 +280,7 @@ class ScheduleController extends Controller
         $end->modify('+1 day');
 
         $period = new DatePeriod($start, new DateInterval('P1D'), $end);
-        $authUser = auth()->user();
-        $query = MasterSchedule::orderBy('cname');
-        if ($authUser && $authUser->ccompany) {
-            $query->where('ccompany', $authUser->ccompany);
-        }
-        $masters = $query->get();
+        $masters = MasterSchedule::orderBy('cname')->get();
         $user = muser::find($nuserid);
 
         $existingSchedules = UserSchedule::where('nuserid', $nuserid)
@@ -282,12 +308,7 @@ class ScheduleController extends Controller
                 continue;
             }
 
-            $authUser = auth()->user();
-            $query = MasterSchedule::query();
-            if ($authUser && $authUser->ccompany) {
-                $query->where('ccompany', $authUser->ccompany);
-            }
-            $master = $query->find($schedId);
+            $master = MasterSchedule::find($schedId);
             if (!$master) {
                 continue;
             }
@@ -562,7 +583,7 @@ class ScheduleController extends Controller
                 ->whereDate('dend', $request->date)
                 ->where('cstatus', 'active')
                 ->get()
-                ->map(fn ($c) => [
+                ->map(fn($c) => [
                     'name' => $c->user->cname ?? '-',
                     'type' => ucfirst($c->ctermtype),
                 ])
@@ -673,4 +694,36 @@ class ScheduleController extends Controller
         );
     }
 
+    public function destroyUserSchedule($id)
+    {
+        $sched = UserSchedule::findOrFail($id);
+        $sched->delete();
+
+        return redirect()->back()->with('success', '🗑 Jadwal shift user berhasil dihapus.');
+    }
+
+    public function updateUserSchedule(Request $request, $id)
+    {
+        $sched = UserSchedule::findOrFail($id);
+
+        $request->validate([
+            'nidsched' => 'required|exists:mschedule,nid',
+        ]);
+
+        $master = MasterSchedule::find($request->nidsched);
+        if (!$master) {
+            return back()->withErrors(['message' => 'Shift tidak ditemukan']);
+        }
+
+        $sched->update([
+            'nidsched'   => $master->nid,
+            'cschedname' => $master->cname,
+            'dstart'     => $master->dstart,
+            'dend'       => $master->dend,
+            'dstart2'    => $master->dstart2,
+            'dend2'      => $master->dend2,
+        ]);
+
+        return redirect()->back()->with('success', '✅ Jadwal shift user berhasil diperbarui.');
+    }
 }
