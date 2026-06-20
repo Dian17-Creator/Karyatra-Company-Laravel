@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Carbon\Carbon;
 use App\Models\mdepartment;
 use App\Models\Mrekening;
+use Illuminate\Support\Facades\Log;
 
 class GajiController extends Controller
 {
@@ -117,7 +118,7 @@ class GajiController extends Controller
                 $displayGajiPokok = $gaji_pokok;
             }
 
-            $fmt = fn ($n) => 'Rp ' . number_format((float)$n, 2, ',', '.');
+            $fmt = fn($n) => 'Rp ' . number_format((float)$n, 2, ',', '.');
 
             return [
                 'id' => $model->id,
@@ -342,7 +343,7 @@ class GajiController extends Controller
             'tabungan_diambil'        => [$row->tabungan_diambil,      $newTabunganDiambil],
             'potongan_lain'           => [$row->potongan_lain,         $newPotonganLain],
             'potongan_tabungan'       => [$row->potongan_tabungan,     $newPotonganTabungan],
-            'potongan_keterlambatan'  => [$row->potongan_keterlambatan,$newPotonganKeterlambatan],
+            'potongan_keterlambatan'  => [$row->potongan_keterlambatan, $newPotonganKeterlambatan],
         ];
 
         $isChanged = false;
@@ -382,25 +383,25 @@ class GajiController extends Controller
 
         // Total tunjangan
         $totalTunjangan = ($row->tunjangan_makan        ?? 0)
-                        + ($row->tunjangan_jabatan       ?? 0)
-                        + ($row->tunjangan_transport     ?? 0)
-                        + ($row->tunjangan_luar_kota     ?? 0)
-                        + ($row->tunjangan_masa_kerja    ?? 0)
-                        + ($row->tunjangan_backup        ?? 0);
+            + ($row->tunjangan_jabatan       ?? 0)
+            + ($row->tunjangan_transport     ?? 0)
+            + ($row->tunjangan_luar_kota     ?? 0)
+            + ($row->tunjangan_masa_kerja    ?? 0)
+            + ($row->tunjangan_backup        ?? 0);
 
         // Total potongan
         $totalPotongan  = ($row->potongan_lain           ?? 0)
-                        + ($row->potongan_tabungan        ?? 0)
-                        + ($row->potongan_keterlambatan   ?? 0);
+            + ($row->potongan_tabungan        ?? 0)
+            + ($row->potongan_keterlambatan   ?? 0);
 
         // Total gaji
         $row->total_gaji = round(
             ($row->gaji_pokok       ?? 0)
-            + $totalTunjangan
-            + ($row->gaji_lembur    ?? 0)
-            + ($row->bonus_kehadiran ?? 0)
-            + ($row->tabungan_diambil ?? 0)
-            - $totalPotongan,
+                + $totalTunjangan
+                + ($row->gaji_lembur    ?? 0)
+                + ($row->bonus_kehadiran ?? 0)
+                + ($row->tabungan_diambil ?? 0)
+                - $totalPotongan,
             2
         );
 
@@ -555,8 +556,6 @@ class GajiController extends Controller
         $month = (int) ($req->input('month', now()->month));
         $depIdRaw = $req->input('department_id', null);
 
-        \Log::info('filterByDepartment called', ['year' => $year, 'month' => $month, 'department_id_raw' => $depIdRaw]);
-
         $depId = null;
         if ($depIdRaw !== null && trim((string)$depIdRaw) !== '') {
             $depId = is_numeric($depIdRaw) ? intval($depIdRaw) : null;
@@ -647,8 +646,8 @@ class GajiController extends Controller
                 $jenisGaji = strtolower($model->jenis_gaji ?? 'pokok');
                 $displayGaji = $jenisGaji === 'harian' ? $gaji_harian : $gaji_pokok;
 
-                $fmt = fn ($n) => 'Rp ' . number_format((float)$n, 2, ',', '.');
-                $rp  = fn ($n) => '' . number_format((float)$n, 2, ',', '.'); // tabel
+                $fmt = fn($n) => 'Rp ' . number_format((float)$n, 2, ',', '.');
+                $rp  = fn($n) => '' . number_format((float)$n, 2, ',', '.'); // tabel
 
                 return [
                     'id' => $model->id,
@@ -740,13 +739,7 @@ class GajiController extends Controller
                 'users_by_dept' => $usersGrouped,
                 'user_ids' => $flatUserIds,
             ], 200);
-
         } catch (\Throwable $e) {
-            \Log::error('filterByDepartment failed', [
-                'err' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'depIdRaw' => $depIdRaw
-            ]);
             return response()->json([
                 'success' => false,
                 'error' => 'Server error saat memproses filter. Cek log server.',
