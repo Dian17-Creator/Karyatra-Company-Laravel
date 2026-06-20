@@ -57,14 +57,18 @@ class BackofficeController extends Controller
         }
 
         $users = $query->paginate(10)->withQueryString();
-        
+
         $departmentsQuery = mdepartment::orderBy('nid');
         if ($authUser && $authUser->ccompany) {
             $departmentsQuery->where('ccompany', $authUser->ccompany);
         }
         $departments = $departmentsQuery->get();
-        
-        $rekenings = Mrekening::orderBy('id')->get();
+
+        $rekeningsQuery = Mrekening::orderBy('id');
+        if ($authUser && $authUser->ccompany) {
+            $rekeningsQuery->where('ccompany', $authUser->ccompany);
+        }
+        $rekenings = $rekeningsQuery->get();
 
         $user = Auth::user() ?? Auth::guard('owner')->user();
         $deptLocationsQuery = Tdeptlokasi::with('department')
@@ -942,9 +946,12 @@ class BackofficeController extends Controller
 
     public function apiBankList()
     {
-        $banks = Mrekening::select('bank')
-            ->distinct()
-            ->pluck('bank');
+        $authUser = Auth::user();
+        $query = Mrekening::select('bank');
+        if ($authUser && $authUser->ccompany) {
+            $query->where('ccompany', $authUser->ccompany);
+        }
+        $banks = $query->distinct()->pluck('bank');
 
         return response()->json([
             'success' => true,
@@ -954,9 +961,12 @@ class BackofficeController extends Controller
 
     public function apiMandiriRekening()
     {
-        $data = Mrekening::where('bank', 'Mandiri')
-            ->orderBy('nomor_rekening')
-            ->get();
+        $authUser = Auth::user();
+        $query = Mrekening::where('bank', 'Mandiri')->orderBy('nomor_rekening');
+        if ($authUser && $authUser->ccompany) {
+            $query->where('ccompany', $authUser->ccompany);
+        }
+        $data = $query->get();
 
         return response()->json([
             'success' => true,
