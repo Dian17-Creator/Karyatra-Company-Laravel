@@ -175,6 +175,14 @@ class GajiController extends Controller
     {
         $row = Csalary::findOrFail($id);
 
+        $authUser = auth()->user();
+        if ($authUser && $authUser->ccompany) {
+            $userOfSalary = $row->user;
+            if ($userOfSalary && $userOfSalary->ccompany !== $authUser->ccompany) {
+                abort(403, 'Anda tidak memiliki akses ke data ini.');
+            }
+        }
+
         $oldJumlahMasuk = (int) ($row->jumlah_masuk ?? 0);
         $oldTunjanganMakan = (float) ($row->tunjangan_makan ?? 0);
         $oldGajiPokok = (float) ($row->gaji_pokok ?? 0);
@@ -417,6 +425,12 @@ class GajiController extends Controller
 
     public function getLatestTunjangan($nid)
     {
+        $authUser = auth()->user();
+        $user = muser::find($nid);
+        if (!$user || ($authUser && $authUser->ccompany && $user->ccompany !== $authUser->ccompany)) {
+            return response()->json(['found' => false], 403);
+        }
+
         $row = Mtunjangan::where('nid', $nid)
             ->orderByDesc('tanggal_berlaku')
             ->orderByDesc('id')
@@ -441,9 +455,16 @@ class GajiController extends Controller
 
     public function tunjanganIndex()
     {
-        $data = Mtunjangan::with('user')
-            ->orderByDesc('tanggal_berlaku')
-            ->get();
+        $authUser = auth()->user();
+        $query = Mtunjangan::with('user')->orderByDesc('tanggal_berlaku');
+
+        if ($authUser && $authUser->ccompany) {
+            $query->whereHas('user', function ($q) use ($authUser) {
+                $q->where('ccompany', $authUser->ccompany);
+            });
+        }
+
+        $data = $query->get();
 
         return view('penggajian.tunjangan_index', [
             'data' => $data
@@ -452,6 +473,14 @@ class GajiController extends Controller
 
     public function tunjanganStore(Request $request)
     {
+        $authUser = auth()->user();
+        if ($request->filled('nid')) {
+            $targetUser = muser::find($request->nid);
+            if ($targetUser && $authUser && $authUser->ccompany && $targetUser->ccompany !== $authUser->ccompany) {
+                abort(403, 'Anda tidak memiliki akses ke user ini.');
+            }
+        }
+
         $validated = $request->validate([
             'nid' => 'nullable|exists:muser,nid',
             'tanggal_berlaku' => 'required|date',
@@ -504,7 +533,13 @@ class GajiController extends Controller
 
     public function tunjanganDelete($id)
     {
-        $row = Mtunjangan::findOrFail($id);
+        $authUser = auth()->user();
+        $row = Mtunjangan::with('user')->findOrFail($id);
+
+        if ($row->user && $authUser && $authUser->ccompany && $row->user->ccompany !== $authUser->ccompany) {
+            abort(403, 'Anda tidak memiliki akses ke data ini.');
+        }
+
         $row->delete();
 
         return back()->with('success', 'Data tunjangan berhasil dihapus.');
@@ -522,6 +557,17 @@ class GajiController extends Controller
                     'WA_FOOTER'
                 )
             ]);
+        }
+
+        $authUser = auth()->user();
+        if ($row && $authUser && $authUser->ccompany) {
+            $userOfSalary = $row->user;
+            if ($userOfSalary && $userOfSalary->ccompany !== $authUser->ccompany) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tidak memiliki akses.'
+                ], 403);
+            }
         }
 
         // Hitung bulan
