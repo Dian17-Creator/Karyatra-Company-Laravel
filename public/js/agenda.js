@@ -1,53 +1,28 @@
-
-    /* ========================================================================
-       GLOBAL VARIABLES
-    ======================================================================== */
-
     let selectedCalendarDate = null;
 
-    /* ========================================================================
-       UTILITY FUNCTIONS
-    ======================================================================== */
-
-    /**
-     * Pad angka menjadi 2 digit (contoh: 1 → "01")
-     */
     function pad(n) {
         return n.toString().padStart(2, '0');
     }
 
-    /**
-     * Parse string "yyyy-mm-dd" menjadi Date object
-     */
     function parseYMD(ymd) {
         const parts = (ymd || '').split('-');
         if (parts.length < 3) return null;
         return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
     }
 
-    /**
-     * Decode HTML entities sederhana (&lt; → <, &gt; → >)
-     */
     function decodeHtml(s) {
         return s.replace(/&lt;/g, '<').replace(/&gt;/g, '>');
     }
 
-    /**
-     * Konversi string tanggal ke format datetime-local (yyyy-mm-ddThh:mm)
-     * Mendukung format: yyyy-mm-dd, dd/mm/yyyy, dan yang sudah mengandung T
-     */
     function asDatetimeLocal(dateStr) {
         if (!dateStr) return '';
-        // sudah mengandung waktu
         if (dateStr.indexOf('T') !== -1) return dateStr;
-        // format yyyy-mm-dd
         var m = dateStr.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
         var now = new Date();
         if (m) {
             return m[1] + '-' + pad(m[2]) + '-' + pad(m[3]) +
                 'T' + pad(now.getHours()) + ':' + pad(now.getMinutes());
         }
-        // format dd/mm/yyyy
         m = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
         if (m) {
             return m[3] + '-' + pad(m[2]) + '-' + pad(m[1]) +
@@ -56,18 +31,12 @@
         return dateStr;
     }
 
-    /**
-     * Konversi datetime string ke format datetime-local pendek (yyyy-mm-ddThh:mm)
-     */
     function toDatetimeLocal(v) {
         if (!v) return '';
         if (v.indexOf('T') !== -1) return v.substring(0, 16);
         return v;
     }
 
-    /**
-     * Isi field date & time dari string datetime ISO
-     */
     function fillDateTime(start, end) {
         if (start) {
             const s = start.split('T');
@@ -81,19 +50,10 @@
         }
     }
 
-    /**
-     * Ambil CSRF token dari meta tag
-     */
     function getCsrfToken() {
         return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
     }
 
-    /**
-     * Validasi reminder agar tidak kurang dari waktu sekarang
-     * return:
-     *  - true  => valid
-     *  - false => ada reminder invalid
-     */
     function validateReminderTime(startAt, reminders) {
 
     const now = new Date();
@@ -104,7 +64,6 @@
         let ms = 0;
         const value = Number(r.value);
 
-        // label indonesia
         let unitLabel = '';
 
         switch (r.unit) {
@@ -130,10 +89,8 @@
                 break;
         }
 
-            // waktu reminder
             const reminderTime = new Date(agendaDate.getTime() - ms);
 
-            // kalau reminder sudah lewat
             if (reminderTime <= now) {
 
                 alert(
@@ -147,15 +104,6 @@
         return true;
     }
 
-    /* ========================================================================
-       REMINDER ROW — MODAL TAMBAH AGENDA
-    ======================================================================== */
-
-    /**
-     * Tambah baris reminder pada modal Tambah Agenda
-     * @param {string} value - Nilai durasi reminder
-     * @param {string} unit  - Satuan (minute|hour|day|week)
-     */
     function addReminderRow(value = '', unit = 'day') {
 
         const list = document.getElementById('reminder_list');
@@ -187,7 +135,6 @@
 
         list.appendChild(row);
 
-        // Hapus baris reminder, nonaktifkan jika sudah kosong
         row.querySelector('.btn-remove-reminder')
             .addEventListener('click', function() {
                 row.remove();
@@ -198,15 +145,6 @@
             });
     }
 
-    /* ========================================================================
-       REMINDER ROW — MODAL DETAIL AGENDA
-    ======================================================================== */
-
-    /**
-     * Tambah baris reminder pada modal Detail Agenda
-     * @param {string} value - Nilai durasi reminder
-     * @param {string} unit  - Satuan (minute|hour|day|week)
-     */
     function addDetailReminderRow(value = '', unit = 'day') {
 
         const list = document.getElementById('detail_reminder_list');

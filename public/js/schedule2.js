@@ -1,11 +1,4 @@
-// schedule2.js
-
 document.addEventListener("DOMContentLoaded", function () {
-    /*
-    |--------------------------------------------------------------------------
-    | ADD AGENDA (AJAX SUBMIT)
-    |--------------------------------------------------------------------------
-    */
     const agendaForm = document.getElementById("addAgendaForm");
 
     if (agendaForm) {
@@ -58,11 +51,6 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | FULLCALENDAR
-    |--------------------------------------------------------------------------
-    */
     const calendarEl = document.getElementById("contractCalendar");
     if (!calendarEl) return;
 
