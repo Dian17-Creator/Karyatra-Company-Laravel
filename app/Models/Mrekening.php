@@ -16,6 +16,7 @@ class Mrekening extends Model
         'bank',
         'atas_nama',
         'cabang',
+        'ccompany'
     ];
     public function users()
     {

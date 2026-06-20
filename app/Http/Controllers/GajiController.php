@@ -38,7 +38,13 @@ class GajiController extends Controller
 
         $users = $usersQuery->get();
         $departments = $departmentsQuery->get();
-        $mrekening = Mrekening::orderBy('bank')->get();
+
+        $mrekeningQuery = Mrekening::orderBy('bank');
+        if ($authUser && $authUser->ccompany) {
+            $mrekeningQuery->where('ccompany', $authUser->ccompany);
+        }
+        $mrekening = $mrekeningQuery->get();
+
         $mtunjangan = $mtunjanganQuery->get();
 
         // optional department filter from query string
