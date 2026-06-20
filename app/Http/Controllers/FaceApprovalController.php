@@ -38,6 +38,12 @@ class FaceApprovalController extends Controller
         $users = muser::where("fface_approved", 0)
             ->whereHas("faces")
             ->when(
+                $auth && $auth->ccompany,
+                function ($q) use ($auth) {
+                    $q->where("ccompany", $auth->ccompany);
+                }
+            )
+            ->when(
                 // jika BUKAN HR → filter by departemen sendiri
                 !$auth->fhrd,
                 function ($q) use ($auth) {
@@ -53,7 +59,23 @@ class FaceApprovalController extends Controller
 
     public function approve($id)
     {
+        $auth = auth()->user();
+
+        // ⛔ selain HR / Captain / Supervisor tidak boleh akses
+        if (!$auth->fhrd && !$auth->fadmin && !$auth->fsuper) {
+            abort(403, "Anda tidak memiliki akses");
+        }
+
         $user = muser::with("faces")->findOrFail($id);
+
+        if ($auth && $auth->ccompany && $user->ccompany !== $auth->ccompany) {
+            abort(403, "Tidak memiliki akses ke user ini");
+        }
+
+        // Jika bukan HR → batasi departemen
+        if (!$auth->fhrd && $user->niddept !== $auth->niddept) {
+            abort(403, "Tidak memiliki akses ke user ini");
+        }
 
         foreach ($user->faces as $face) {
             $filePath = public_path(
@@ -88,7 +110,23 @@ class FaceApprovalController extends Controller
 
     public function reject($id)
     {
+        $auth = auth()->user();
+
+        // ⛔ selain HR / Captain / Supervisor tidak boleh akses
+        if (!$auth->fhrd && !$auth->fadmin && !$auth->fsuper) {
+            abort(403, "Anda tidak memiliki akses");
+        }
+
         $user = muser::with("faces")->findOrFail($id);
+
+        if ($auth && $auth->ccompany && $user->ccompany !== $auth->ccompany) {
+            abort(403, "Tidak memiliki akses ke user ini");
+        }
+
+        // Jika bukan HR → batasi departemen
+        if (!$auth->fhrd && $user->niddept !== $auth->niddept) {
+            abort(403, "Tidak memiliki akses ke user ini");
+        }
 
         foreach ($user->faces as $face) {
             $filePath = public_path(
@@ -120,6 +158,10 @@ class FaceApprovalController extends Controller
         }
 
         $user = muser::with(["faces", "department"])->findOrFail($id);
+
+        if ($auth && $auth->ccompany && $user->ccompany !== $auth->ccompany) {
+            abort(403, "Tidak memiliki akses ke user ini");
+        }
 
         // Jika bukan HR → batasi departemen
         if (!$auth->fhrd && $user->niddept !== $auth->niddept) {
