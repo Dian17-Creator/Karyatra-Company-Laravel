@@ -135,7 +135,7 @@
 
         list.appendChild(row);
 
-        row.querySelector('.btn-remove-reminder')
+            row.querySelector('.btn-remove-reminder')
             .addEventListener('click', function() {
                 row.remove();
                 if (list.children.length === 0) {
