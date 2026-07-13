@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Carbon\Carbon;
 use App\Models\mdepartment;
 use App\Models\Mrekening;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class GajiController extends Controller
@@ -22,7 +23,7 @@ class GajiController extends Controller
         $selYear  = $request->year ?? now()->year;
         $selMonth = $request->month ?? now()->month;
 
-        $authUser = auth()->user();
+        $authUser = Auth::user();
 
         // master data
         $usersQuery = muser::orderBy('cname');
@@ -171,7 +172,7 @@ class GajiController extends Controller
         ]);
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, int|string $id)
     {
         $row = Csalary::with('user')->findOrFail($id);
 
@@ -442,9 +443,9 @@ class GajiController extends Controller
         return redirect()->back()->with('success', 'Payroll berhasil diperbarui.');
     }
 
-    public function getLatestTunjangan($nid)
+    public function getLatestTunjangan(int|string $nid)
     {
-        $authUser = auth()->user();
+        $authUser = Auth::user();
         $user = muser::find($nid);
         if (!$user || ($authUser && $authUser->ccompany && $user->ccompany !== $authUser->ccompany)) {
             return response()->json(['found' => false], 403);
@@ -474,7 +475,7 @@ class GajiController extends Controller
 
     public function tunjanganIndex()
     {
-        $authUser = auth()->user();
+        $authUser = Auth::user();
         $query = Mtunjangan::with('user')->orderByDesc('tanggal_berlaku');
 
         if ($authUser && $authUser->ccompany) {
@@ -492,7 +493,7 @@ class GajiController extends Controller
 
     public function tunjanganStore(Request $request)
     {
-        $authUser = auth()->user();
+        $authUser = Auth::user();
         if ($request->filled('nid')) {
             $targetUser = muser::find($request->nid);
             if ($targetUser && $authUser && $authUser->ccompany && $targetUser->ccompany !== $authUser->ccompany) {
@@ -550,9 +551,9 @@ class GajiController extends Controller
         return back()->with('success', 'Tunjangan berhasil ditambahkan.');
     }
 
-    public function tunjanganDelete($id)
+    public function tunjanganDelete(int|string $id)
     {
-        $authUser = auth()->user();
+        $authUser = Auth::user();
         $row = Mtunjangan::with('user')->findOrFail($id);
 
         if ($row->user && $authUser && $authUser->ccompany && $row->user->ccompany !== $authUser->ccompany) {
@@ -564,7 +565,7 @@ class GajiController extends Controller
         return back()->with('success', 'Data tunjangan berhasil dihapus.');
     }
 
-    public function getSlipInfo($id)
+    public function getSlipInfo(int|string $id)
     {
         $row = Csalary::find($id);
 
@@ -578,7 +579,7 @@ class GajiController extends Controller
             ]);
         }
 
-        $authUser = auth()->user();
+        $authUser = Auth::user();
         if ($row && $authUser && $authUser->ccompany) {
             $userOfSalary = $row->user;
             if ($userOfSalary && $userOfSalary->ccompany !== $authUser->ccompany) {
@@ -627,7 +628,7 @@ class GajiController extends Controller
         }
 
         try {
-            $authUser = auth()->user();
+            $authUser = Auth::user();
             $query = Csalary::with('user')
                 ->where('period_year', $year)
                 ->where('period_month', $month)
@@ -959,7 +960,7 @@ class GajiController extends Controller
         ]);
     }
 
-    public function show(Request $request, $id)
+    public function show(Request $request, int|string $id)
     {
         $row = Csalary::with('user')->find($id);
 
