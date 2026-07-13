@@ -30,6 +30,7 @@ class NotifikasiController extends Controller
             ->where('mrequest.chrdstat', 'pending')
             ->where('mrequest.cstatus', 'pending')
             ->when(!$isHrd, fn($q) => $q->where('muser.niddept', $userDept))
+            ->when($user && $user->ccompany, fn($q) => $q->where('muser.ccompany', $user->ccompany))
             ->select('mrequest.nid', 'muser.cname as nama', 'mrequest.nuserid as nuserid', 'mrequest.dcreated as tanggal')
             ->get();
 
@@ -41,6 +42,7 @@ class NotifikasiController extends Controller
             // pastikan bukan entri "forgot" sehingga tidak muncul dua kali
             ->where('mscan_manual.status', '<>', 'forgot')
             ->when(!$isHrd, fn($q) => $q->where('muser.niddept', $userDept))
+            ->when($user && $user->ccompany, fn($q) => $q->where('muser.ccompany', $user->ccompany))
             ->select('mscan_manual.nid', 'muser.cname as nama', 'muser.nid as nuserid', 'mscan_manual.dscanned as tanggal')
             ->get();
 
@@ -51,6 +53,7 @@ class NotifikasiController extends Controller
             ->where('mscan_manual.cstatus', 'pending')
             ->where('mscan_manual.chrdstat', 'pending')
             ->when(!$isHrd, fn($q) => $q->where('muser.niddept', $userDept))
+            ->when($user && $user->ccompany, fn($q) => $q->where('muser.ccompany', $user->ccompany))
             ->select(
                 'mscan_manual.nid',
                 'muser.cname as nama',
@@ -66,6 +69,7 @@ class NotifikasiController extends Controller
         //     ->whereBetween('tusercontract.dend', [$today, $next30Days])
         //     ->where('tusercontract.cstatus', 'active')
         //     ->when(!$isHrd, fn ($q) => $q->where('muser.niddept', $userDept))
+        //     ->when($user && $user->ccompany, fn($q) => $q->where('muser.ccompany', $user->ccompany))
         //     ->select('tusercontract.nid', 'muser.cname as nama', 'tusercontract.nuserid as nuserid', 'tusercontract.dend as tanggal_akhir')
         //     ->get();
 
@@ -75,6 +79,7 @@ class NotifikasiController extends Controller
         //     ->leftJoin('mface_scan', 'tuserfaces.nuserid', '=', 'mface_scan.nuserid')
         //     ->whereNull('mface_scan.nuserid') // BELUM APPROVED
         //     ->when(!$isHrd, fn ($q) => $q->where('muser.niddept', $userDept))
+        //     ->when($user && $user->ccompany, fn($q) => $q->where('muser.ccompany', $user->ccompany))
         //     ->select(
         //         'tuserfaces.nid',
         //         'muser.cname as nama',
