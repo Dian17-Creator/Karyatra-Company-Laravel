@@ -1026,6 +1026,7 @@ class GajiController extends Controller
 
     private function resolveCcompany(Request $request)
     {
+        // 1. Check direct ccompany in request parameter or headers
         if ($request->filled('ccompany')) {
             return $request->input('ccompany');
         }
@@ -1033,8 +1034,10 @@ class GajiController extends Controller
             return $request->header('X-Company');
         }
 
-        $user = auth()->user() ?? auth()->guard('owner')->user();
+        // 2. Check Auth user (standard or owner guard)
+        $user = Auth::user() ?? Auth::guard('owner')->user();
 
+        // 3. Fallback: check query/post parameters for user/admin ID
         if (!$user) {
             $userId = $request->input('user_id')
                 ?: $request->input('admin_id')
@@ -1047,6 +1050,7 @@ class GajiController extends Controller
             }
         }
 
+        // 4. Fallback: check request headers for user ID
         if (!$user && $request->header('X-User-Id')) {
             $user = muser::find($request->header('X-User-Id'));
         }
