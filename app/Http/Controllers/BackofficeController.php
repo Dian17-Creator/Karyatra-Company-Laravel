@@ -850,7 +850,10 @@ class BackofficeController extends Controller
             'dtanggalmasuk'  => 'nullable|date',
             'rekening_id'    => 'nullable|exists:mrekening,id',
             'bank'           => 'nullable|in:BCA,BRI,Mandiri',
-            'fnotif'         => 'required|in:0,1'
+            'fnotif'         => 'required|in:0,1',
+            'creator_id'     => 'nullable|exists:muser,nid',
+            'admin_id'       => 'nullable|exists:muser,nid',
+            'approver_id'    => 'nullable|exists:muser,nid',
         ]);
 
         if ($validator->fails()) {
@@ -863,6 +866,8 @@ class BackofficeController extends Controller
 
         try {
             $role = $request->input('role', 'crew');
+
+            $ccompany = $this->resolveCcompany($request);
 
             $user = muser::create([
                 'cemail'         => $request->email,
@@ -884,6 +889,7 @@ class BackofficeController extends Controller
                 'niddeptpayroll' => $request->input('niddeptpayroll'),
                 'dcreated'       => now(),
                 'finger_id'      => $request->input('finger_id') ?: null,
+                'ccompany'       => $ccompany,
             ]);
 
             $bankInput     = $request->input('bank');
@@ -934,9 +940,14 @@ class BackofficeController extends Controller
         }
     }
 
-    public function apiDepartmentList()
+    public function apiDepartmentList(Request $request)
     {
-        $data = Mdepartment::orderBy('cname')->get();
+        $ccompany = $this->resolveCcompany($request);
+        $query = Mdepartment::orderBy('cname');
+        if ($ccompany) {
+            $query->where('ccompany', $ccompany);
+        }
+        $data = $query->get();
 
         return response()->json([
             'success' => true,
@@ -944,12 +955,12 @@ class BackofficeController extends Controller
         ]);
     }
 
-    public function apiBankList()
+    public function apiBankList(Request $request)
     {
-        $authUser = Auth::user();
+        $ccompany = $this->resolveCcompany($request);
         $query = Mrekening::select('bank');
-        if ($authUser && $authUser->ccompany) {
-            $query->where('ccompany', $authUser->ccompany);
+        if ($ccompany) {
+            $query->where('ccompany', $ccompany);
         }
         $banks = $query->distinct()->pluck('bank');
 
@@ -959,12 +970,12 @@ class BackofficeController extends Controller
         ]);
     }
 
-    public function apiMandiriRekening()
+    public function apiMandiriRekening(Request $request)
     {
-        $authUser = Auth::user();
+        $ccompany = $this->resolveCcompany($request);
         $query = Mrekening::where('bank', 'Mandiri')->orderBy('nomor_rekening');
-        if ($authUser && $authUser->ccompany) {
-            $query->where('ccompany', $authUser->ccompany);
+        if ($ccompany) {
+            $query->where('ccompany', $ccompany);
         }
         $data = $query->get();
 
@@ -972,5 +983,22 @@ class BackofficeController extends Controller
             'success' => true,
             'data' => $data
         ]);
+    }
+
+    private function resolveCcompany(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            $userId = $request->input('user_id')
+                ?: $request->input('admin_id')
+                ?: $request->input('creator_id')
+                ?: $request->input('added_by')
+                ?: $request->input('approver_id');
+
+            if ($userId) {
+                $user = muser::find($userId);
+            }
+        }
+        return $user ? $user->ccompany : null;
     }
 }
