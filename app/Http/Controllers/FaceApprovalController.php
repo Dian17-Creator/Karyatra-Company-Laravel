@@ -85,7 +85,7 @@ class FaceApprovalController extends Controller
         }
 
         foreach ($user->faces as $face) {
-            $filePath = public_path("hrd/biometrik/" . $face->cfilename);
+            $filePath = public_path("karyatrahrd/biometrik/" . $face->cfilename);
 
             if (!file_exists($filePath)) {
                 Log::warning("Face file not found: {$filePath}");
@@ -138,7 +138,7 @@ class FaceApprovalController extends Controller
         }
 
         foreach ($user->faces as $face) {
-            $filePath = public_path("hrd/biometrik/" . $face->cfilename);
+            $filePath = public_path("karyatrahrd/biometrik/" . $face->cfilename);
 
             if (file_exists($filePath)) {
                 @unlink($filePath);
@@ -217,7 +217,7 @@ class FaceApprovalController extends Controller
                 'faces'      => $user->faces->map(function ($face) {
                     return [
                         'nid' => $face->nid,
-                        'url' => url('hrd/biometrik/' . $face->cfilename),
+                        'url' => url('karyatrahrd/biometrik/' . $face->cfilename),
                     ];
                 }),
             ];
@@ -257,7 +257,7 @@ class FaceApprovalController extends Controller
 
         $errors = [];
         foreach ($user->faces as $face) {
-            $filePath = public_path('hrd/biometrik/' . $face->cfilename);
+            $filePath = public_path('karyatrahrd/biometrik/' . $face->cfilename);
 
             if (!file_exists($filePath)) {
                 Log::warning("API Face Approve - file not found: {$filePath}");
@@ -319,7 +319,7 @@ class FaceApprovalController extends Controller
         }
 
         foreach ($user->faces as $face) {
-            $filePath = public_path('hrd/biometrik/' . $face->cfilename);
+            $filePath = public_path('karyatrahrd/biometrik/' . $face->cfilename);
             if (file_exists($filePath)) {
                 @unlink($filePath);
             }
