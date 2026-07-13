@@ -66,7 +66,11 @@ class FaceApprovalController extends Controller
             abort(403, "Anda tidak memiliki akses");
         }
 
-        $user = muser::with("faces")->findOrFail($id);
+        $userQuery = muser::with("faces");
+        if ($auth && $auth->ccompany) {
+            $userQuery->where("ccompany", $auth->ccompany);
+        }
+        $user = $userQuery->findOrFail($id);
 
         if ($auth && $auth->ccompany && $user->ccompany !== $auth->ccompany) {
             abort(403, "Tidak memiliki akses ke user ini");
@@ -117,7 +121,11 @@ class FaceApprovalController extends Controller
             abort(403, "Anda tidak memiliki akses");
         }
 
-        $user = muser::with("faces")->findOrFail($id);
+        $userQuery = muser::with("faces");
+        if ($auth && $auth->ccompany) {
+            $userQuery->where("ccompany", $auth->ccompany);
+        }
+        $user = $userQuery->findOrFail($id);
 
         if ($auth && $auth->ccompany && $user->ccompany !== $auth->ccompany) {
             abort(403, "Tidak memiliki akses ke user ini");
@@ -157,7 +165,11 @@ class FaceApprovalController extends Controller
             abort(403, "Tidak memiliki akses");
         }
 
-        $user = muser::with(["faces", "department"])->findOrFail($id);
+        $userQuery = muser::with(["faces", "department"]);
+        if ($auth && $auth->ccompany) {
+            $userQuery->where("ccompany", $auth->ccompany);
+        }
+        $user = $userQuery->findOrFail($id);
 
         if ($auth && $auth->ccompany && $user->ccompany !== $auth->ccompany) {
             abort(403, "Tidak memiliki akses ke user ini");
