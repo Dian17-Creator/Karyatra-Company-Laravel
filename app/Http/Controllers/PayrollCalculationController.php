@@ -162,13 +162,13 @@ class PayrollCalculationController extends Controller
         foreach ($userIds as $uid) {
             Log::info("PROCESS USER PAYROLL", ["uid" => $uid]);
 
-            new CalculatePayrollJob(
+            (new CalculatePayrollJob(
                 (int) $uid,
                 $year,
                 $month,
                 $request->has("recalculate"),
                 $request->input("split_by_change") == "1",
-            )->handle();
+            ))->handle();
         }
 
         // =========================
