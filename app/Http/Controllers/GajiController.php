@@ -173,14 +173,18 @@ class GajiController extends Controller
 
     public function update(Request $request, $id)
     {
-        $row = Csalary::findOrFail($id);
+        $row = Csalary::with('user')->findOrFail($id);
 
-        $authUser = auth()->user();
-        if ($authUser && $authUser->ccompany) {
-            $userOfSalary = $row->user;
-            if ($userOfSalary && $userOfSalary->ccompany !== $authUser->ccompany) {
-                abort(403, 'Anda tidak memiliki akses ke data ini.');
+        // Filter by company — support both session auth dan API (resolveCcompany)
+        $ccompany = $this->resolveCcompany($request);
+        if ($ccompany && $row->user && $row->user->ccompany !== $ccompany) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tidak memiliki akses ke data ini.'
+                ], 403);
             }
+            abort(403, 'Anda tidak memiliki akses ke data ini.');
         }
 
         $oldJumlahMasuk = (int) ($row->jumlah_masuk ?? 0);
@@ -363,6 +367,13 @@ class GajiController extends Controller
         }
 
         if ($isChanged && empty(trim($newReasonEdit ?? ''))) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Alasan edit wajib diisi jika ada perubahan data.',
+                    'errors'  => ['reasonedit' => 'Alasan edit wajib diisi jika ada perubahan data.']
+                ], 422);
+            }
             return redirect()->back()
                 ->withErrors(['reasonedit' => 'Alasan edit wajib diisi jika ada perubahan data.'])
                 ->withInput();
@@ -419,6 +430,14 @@ class GajiController extends Controller
 
         $row->save();
         $row->refresh()->regenerateSlipPdf();
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Payroll berhasil diperbarui.',
+                'data'    => ['id' => $row->id, 'total_gaji' => $row->total_gaji]
+            ]);
+        }
 
         return redirect()->back()->with('success', 'Payroll berhasil diperbarui.');
     }
@@ -792,5 +811,246 @@ class GajiController extends Controller
                 'message' => $e->getMessage()
             ], 500);
         }
+    }
+
+    public function apiList(Request $req)
+    {
+        $year  = (int) ($req->input('year', now()->year));
+
+        $month = (int) ($req->input('month', now()->month));
+
+        $departmentId = $req->input('department_id');
+
+        $ccompany = $this->resolveCcompany($req);
+
+        $query = Csalary::with('user')
+            ->where('period_year', $year)
+            ->where('period_month', $month)
+            ->orderBy('user_id');
+
+        // Filter by company — hanya tampilkan data milik company yang sama
+        if ($ccompany) {
+            $query->whereHas('user', function ($q) use ($ccompany) {
+                $q->where('ccompany', $ccompany);
+            });
+        }
+
+        if (!empty($departmentId)) {
+            $userIdsQuery = muser::where('niddeptpayroll', $departmentId);
+            if ($ccompany) {
+                $userIdsQuery->where('ccompany', $ccompany);
+            }
+            $userIds = $userIdsQuery->pluck('nid');
+            $query->whereIn('user_id', $userIds);
+        }
+
+        $rows = $query->get();
+
+        $data = $rows->map(function ($model) {
+
+            $user = $model->user;
+
+            $jabatan = 'Crew';
+
+            if ($user) {
+
+                if (!empty($user->fhrd)) {
+
+                    $jabatan = 'HRD';
+                } elseif (!empty($user->fadmin)) {
+
+                    $jabatan = 'Captain';
+                } elseif (!empty($user->fsuper)) {
+
+                    $jabatan = 'Supervisor';
+                } elseif (!empty($user->jabatan)) {
+
+                    $jabatan = $user->jabatan;
+                }
+            }
+
+            return [
+
+                'id' => $model->id,
+
+                'user_id' => $model->user_id,
+
+                'department_id' =>
+                $user->niddeptpayroll ?? null,
+
+                'user_name' =>
+                $user->cname ?? '-',
+
+                'jabatan' => $jabatan,
+
+                'jumlah_masuk' =>
+                $model->jumlah_masuk,
+
+                'gaji' =>
+                $model->gaji,
+
+                'gaji_pokok' =>
+                $model->gaji_pokok,
+
+                'tunjangan_makan' =>
+                $model->tunjangan_makan,
+
+                'tunjangan_jabatan' =>
+                $model->tunjangan_jabatan,
+
+                'tunjangan_transport' =>
+                $model->tunjangan_transport,
+
+                'tunjangan_luar_kota' =>
+                $model->tunjangan_luar_kota,
+
+                'tunjangan_masa_kerja' =>
+                $model->tunjangan_masa_kerja,
+
+                'tunjangan_backup' =>
+                $model->tunjangan_backup,
+
+                'tunjangan_konten' =>
+                $model->tunjangan_konten,
+
+                'gaji_lembur' =>
+                $model->gaji_lembur,
+
+                'bonus_kehadiran' =>
+                $model->bonus_kehadiran,
+
+                'bonus_kpi' =>
+                $model->bonus_kpi,
+
+                'reimburce' =>
+                $model->reimburce,
+
+                'potongan_lain' =>
+                $model->potongan_lain,
+
+                'potongan_tabungan' =>
+                $model->potongan_tabungan,
+
+                'potongan_keterlambatan' =>
+                $model->potongan_keterlambatan,
+
+                'total_gaji' =>
+                $model->total_gaji,
+
+                'status' =>
+                $model->status,
+
+                'pdf_url' =>
+                $model->pdf_url,
+
+                'note' =>
+                $model->note,
+
+                'reasonedit' =>
+                $model->reasonedit,
+            ];
+        });
+
+        return response()->json([
+
+            'success' => true,
+
+            'data' => $data
+        ]);
+    }
+
+    public function show(Request $request, $id)
+    {
+        $row = Csalary::with('user')->find($id);
+
+        if (!$row) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data salary tidak ditemukan'
+            ], 404);
+        }
+
+        $ccompany = $this->resolveCcompany($request);
+        if ($ccompany && $row->user && $row->user->ccompany !== $ccompany) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tidak memiliki akses ke data ini.'
+            ], 403);
+        }
+
+        $user = $row->user;
+        $jabatan = 'Crew';
+        if ($user) {
+            if (!empty($user->fhrd))        $jabatan = 'HRD';
+            elseif (!empty($user->fadmin))  $jabatan = 'Captain';
+            elseif (!empty($user->fsuper))  $jabatan = 'Supervisor';
+            elseif (!empty($user->jabatan)) $jabatan = $user->jabatan;
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id'                      => $row->id,
+                'user_id'                 => $row->user_id,
+                'user_name'               => $user->cname ?? '-',
+                'department_id'           => $user->niddeptpayroll ?? null,
+                'jabatan'                 => $jabatan,
+                'period_year'             => $row->period_year,
+                'period_month'            => $row->period_month,
+                'jumlah_masuk'            => $row->jumlah_masuk,
+                'gaji_pokok'              => $row->gaji_pokok,
+                'tunjangan_makan'         => $row->tunjangan_makan,
+                'tunjangan_jabatan'       => $row->tunjangan_jabatan,
+                'tunjangan_transport'     => $row->tunjangan_transport,
+                'tunjangan_luar_kota'     => $row->tunjangan_luar_kota,
+                'tunjangan_masa_kerja'    => $row->tunjangan_masa_kerja,
+                'tunjangan_backup'        => $row->tunjangan_backup,
+                'tunjangan_konten'        => $row->tunjangan_konten,
+                'gaji_lembur'             => $row->gaji_lembur,
+                'bonus_kehadiran'         => $row->bonus_kehadiran,
+                'bonus_kpi'               => $row->bonus_kpi,
+                'reimburce'               => $row->reimburce,
+                'potongan_lain'           => $row->potongan_lain,
+                'potongan_tabungan'       => $row->potongan_tabungan,
+                'potongan_keterlambatan'  => $row->potongan_keterlambatan,
+                'total_gaji'              => $row->total_gaji,
+                'status'                  => $row->status,
+                'pdf_url'                 => $row->pdf_url,
+                'note'                    => $row->note,
+                'keterangan_absensi'      => $row->keterangan_absensi,
+                'reasonedit'              => $row->reasonedit,
+                'user_note'               => $row->user_note,
+            ]
+        ]);
+    }
+
+    private function resolveCcompany(Request $request)
+    {
+        if ($request->filled('ccompany')) {
+            return $request->input('ccompany');
+        }
+        if ($request->header('X-Company')) {
+            return $request->header('X-Company');
+        }
+
+        $user = auth()->user() ?? auth()->guard('owner')->user();
+
+        if (!$user) {
+            $userId = $request->input('user_id')
+                ?: $request->input('admin_id')
+                ?: $request->input('creator_id')
+                ?: $request->input('added_by')
+                ?: $request->input('approver_id');
+
+            if ($userId) {
+                $user = muser::find($userId);
+            }
+        }
+
+        if (!$user && $request->header('X-User-Id')) {
+            $user = muser::find($request->header('X-User-Id'));
+        }
+
+        return $user ? $user->ccompany : null;
     }
 }

@@ -365,6 +365,22 @@ class PayrollCalculationController extends Controller
 
     public function getUserSalary($userId, Request $request)
     {
+        $targetUser = muser::find($userId);
+        if (!$targetUser) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User tidak ditemukan'
+            ], 404);
+        }
+
+        $ccompany = $this->resolveCcompany($request);
+        if ($ccompany && $targetUser->ccompany !== $ccompany) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tidak memiliki akses ke user ini.'
+            ], 403);
+        }
+
         $year = $request->get("year");
         $month = $request->get("month");
 
@@ -464,6 +480,8 @@ class PayrollCalculationController extends Controller
             "note" => "nullable|string",
         ]);
 
+        $ccompany = $this->resolveCcompany($request);
+
         $salary = Csalary::where("user_id", $request->user_id)
             ->where("period_year", $request->year)
             ->where("period_month", $request->month)
@@ -477,6 +495,14 @@ class PayrollCalculationController extends Controller
                 ],
                 404,
             );
+        }
+
+        $salary->load('user');
+        if ($ccompany && $salary->user && $salary->user->ccompany !== $ccompany) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tidak memiliki akses ke data salary ini.'
+            ], 403);
         }
 
         $salary->status = $request->status;
@@ -563,5 +589,35 @@ class PayrollCalculationController extends Controller
 
             return back()->with("error", "Email gagal dikirim");
         }
+    }
+
+    private function resolveCcompany(Request $request)
+    {
+        if ($request->filled('ccompany')) {
+            return $request->input('ccompany');
+        }
+        if ($request->header('X-Company')) {
+            return $request->header('X-Company');
+        }
+
+        $user = Auth::user() ?? Auth::guard('owner')->user();
+
+        if (!$user) {
+            $userId = $request->input('user_id')
+                ?: $request->input('admin_id')
+                ?: $request->input('creator_id')
+                ?: $request->input('added_by')
+                ?: $request->input('approver_id');
+
+            if ($userId) {
+                $user = muser::find($userId);
+            }
+        }
+
+        if (!$user && $request->header('X-User-Id')) {
+            $user = muser::find($request->header('X-User-Id'));
+        }
+
+        return $user ? $user->ccompany : null;
     }
 }
