@@ -7,6 +7,7 @@ use App\Http\Controllers\PayrollCalculationController;
 use App\Http\Controllers\MagendaController;
 use App\Http\Controllers\DeviceTokenController;
 use App\Http\Controllers\NotifikasiController;
+use App\Http\Controllers\FaceApprovalController;
 
 Route::get('/logs/{userId}', [BackofficeController::class, 'apiLogs']);
 Route::get('/schedule/{userId}', [ScheduleController::class, 'apiUserSchedule']);
@@ -25,3 +26,8 @@ Route::post('/send-notif', [DeviceTokenController::class, 'sendNotif']);
 
 // Notifikasi ke email
 Route::get('/trigger-email', [NotifikasiController::class, 'trigger']);
+
+// Face Approval API
+Route::get('/face-approval/pending', [FaceApprovalController::class, 'apiPendingList']);
+Route::post('/face-approval/{id}/approve', [FaceApprovalController::class, 'apiApprove']);
+Route::post('/face-approval/{id}/reject', [FaceApprovalController::class, 'apiReject']);
