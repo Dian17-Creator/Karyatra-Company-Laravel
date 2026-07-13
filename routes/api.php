@@ -13,8 +13,11 @@ Route::get('/logs/{userId}', [BackofficeController::class, 'apiLogs']);
 Route::get('/schedule/{userId}', [ScheduleController::class, 'apiUserSchedule']);
 Route::get('/schedule/today/{userId}', [ScheduleController::class, 'apiTodayShift']);
 Route::prefix('user/gaji')->group(function () {
+    Route::get('list', [GajiController::class, 'apiList']);
     Route::get('{userId}', [PayrollCalculationController::class, 'getUserSalary']);
     Route::post('status', [PayrollCalculationController::class, 'updateSalaryStatus']);
+    Route::get('{id}/detail', [GajiController::class, 'show']);
+    Route::post('{id}/update', [GajiController::class, 'update']);
 });
 
 // Route::get('/agenda/{userId}/{month}', [MagendaController::class, 'mobile']);
