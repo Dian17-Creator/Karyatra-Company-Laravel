@@ -31,3 +31,9 @@ Route::get('/trigger-email', [NotifikasiController::class, 'trigger']);
 Route::get('/face-approval/pending', [FaceApprovalController::class, 'apiPendingList']);
 Route::post('/face-approval/{id}/approve', [FaceApprovalController::class, 'apiApprove']);
 Route::post('/face-approval/{id}/reject', [FaceApprovalController::class, 'apiReject']);
+
+// Store User Api
+Route::post('/user/store', [BackofficeController::class, 'apiStoreUser']);
+Route::get('/department/list', [BackofficeController::class, 'apiDepartmentList']);
+Route::get('/bank/list', [BackofficeController::class, 'apiBankList']);
+Route::get('/mandiri/rekening', [BackofficeController::class, 'apiMandiriRekening']);
