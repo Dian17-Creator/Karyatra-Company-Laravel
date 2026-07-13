@@ -8,6 +8,7 @@ use App\Http\Controllers\MagendaController;
 use App\Http\Controllers\DeviceTokenController;
 use App\Http\Controllers\NotifikasiController;
 use App\Http\Controllers\FaceApprovalController;
+use App\Http\Controllers\GajiController;
 
 Route::get('/logs/{userId}', [BackofficeController::class, 'apiLogs']);
 Route::get('/schedule/{userId}', [ScheduleController::class, 'apiUserSchedule']);
