@@ -48,7 +48,8 @@ class MscanExport implements FromCollection, WithHeadings, WithMapping
                         ELSE 'Scan'
                     END as tipe_absen
                 "),
-                DB::raw("'mscan' as source_origin")
+                DB::raw("'mscan' as source_origin"),
+                DB::raw('NULL as ciswifi')
             )
 
             ->where('mscan.nuserId', $this->userId)
@@ -76,7 +77,8 @@ class MscanExport implements FromCollection, WithHeadings, WithMapping
                 DB::raw('1 as fmanual'),
                 'muser.cname',
                 DB::raw("'Manual' as tipe_absen"), // ✅ REVISI
-                DB::raw("'mscan_manual' as source_origin")
+                DB::raw("'mscan_manual' as source_origin"),
+                DB::raw('NULL as ciswifi')
             )
             ->where('mscan_manual.nuserId', $this->userId)
             ->whereBetween('mscan_manual.dscanned', [
@@ -105,7 +107,8 @@ class MscanExport implements FromCollection, WithHeadings, WithMapping
                 DB::raw('0 as fmanual'),
                 'muser.cname',
                 DB::raw("'Face' as tipe_absen"), // ✅ REVISI
-                DB::raw("'mface_scan' as source_origin")
+                DB::raw("'mface_scan' as source_origin"),
+                'mface_scan.ciswifi'
             )
             ->where('mface_scan.nuserId', $this->userId)
             ->whereBetween('mface_scan.dscanned', [
@@ -127,6 +130,7 @@ class MscanExport implements FromCollection, WithHeadings, WithMapping
             'ID',
             'Tanggal & Waktu',
             'Lokasi',
+            'Wifi Kantor',
             // 'Koordinat Scan',
             'Tipe Absen',
             'Alasan (Jika Manual)',
@@ -161,6 +165,7 @@ class MscanExport implements FromCollection, WithHeadings, WithMapping
             $item->nid,
             $item->dscanned,
             $lokasi,
+            $item->ciswifi ?? '-',
             // $item->nlat . ', ' . $item->nlng,
             $item->tipe_absen,
             $item->creason ?? '-',

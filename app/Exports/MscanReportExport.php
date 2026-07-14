@@ -40,13 +40,10 @@ class MscanReportExport implements WithMultipleSheets
     public function sheets(): array
     {
         $sheets = [];
-        $authUser = auth()->user() ?? auth('owner')->user();
 
-        $departmentsQuery = DB::table('mdepartment')->orderBy('cname');
-        if ($authUser && $authUser->ccompany) {
-            $departmentsQuery->where('ccompany', $authUser->ccompany);
-        }
-        $departments = $departmentsQuery->get();
+        $departments = DB::table('mdepartment')
+            ->orderBy('cname')
+            ->get();
 
         foreach ($departments as $dept) {
             $sheets[] = new MscanReportSheet(
@@ -112,11 +109,11 @@ class MscanReportSheet implements
      * ========================= */
     public function collection()
     {
-        $authUser = auth()->user() ?? auth('owner')->user();
         $sql = "
         SELECT
             scan.nuserid,
             scan.dscanned,
+            scan.source,
             sched.dstart,
             sched.dend,
             sched.dstart2,
@@ -125,11 +122,11 @@ class MscanReportSheet implements
             u.cname,
             u.niddept
         FROM (
-            SELECT nuserid, dscanned FROM mscan
+            SELECT nuserid, dscanned, (CASE WHEN creason IS NOT NULL AND creason != '' THEN 'manual' ELSE 'scan' END) AS source FROM mscan
             UNION ALL
-            SELECT nuserid, dscanned FROM mscan_manual
+            SELECT nuserid, dscanned, LOWER(status) AS source FROM mscan_manual
             UNION ALL
-            SELECT nuserId AS nuserid, dscanned FROM mface_scan
+            SELECT nuserId AS nuserid, dscanned, 'face' AS source FROM mface_scan
         ) scan
         LEFT JOIN tuserschedule sched
             ON sched.nuserid = scan.nuserid
@@ -138,17 +135,14 @@ class MscanReportSheet implements
             ON u.nid = scan.nuserid
         WHERE DATE(scan.dscanned) BETWEEN ? AND ?
         AND u.niddept = ?
+        ORDER BY scan.nuserid, scan.dscanned
     ";
 
-        $params = [$this->start, $this->end, $this->dept];
-        if ($authUser && $authUser->ccompany) {
-            $sql .= " AND u.ccompany = ? ";
-            $params[] = $authUser->ccompany;
-        }
-
-        $sql .= " ORDER BY scan.nuserid, scan.dscanned";
-
-        $rows = DB::select($sql, $params);
+        $rows = DB::select($sql, [
+            $this->start,
+            $this->end,
+            $this->dept
+        ]);
 
         $grouped = collect($rows)->groupBy(function ($row) {
             return $row->nuserid . '_' . date('Y-m-d', strtotime($row->dscanned));
@@ -189,6 +183,9 @@ class MscanReportSheet implements
                     );
                 }
 
+                $inScan = $scans->firstWhere('dscanned', $in);
+                $outScan = $scans->firstWhere('dscanned', $out);
+
                 $result[] = [
                     'cname' => $first->cname,
                     'date' => date('Y-m-d', strtotime($in)),
@@ -196,20 +193,23 @@ class MscanReportSheet implements
 
                     'dstart' => $first->dstart,
                     'in_time' => date('H:i:s', strtotime($in)),
+                    'in_source' => $inScan ? $inScan->source : null,
                     'dend' => $first->dend,
                     'out_time' => date('H:i:s', strtotime($out)),
+                    'out_source' => $outScan ? $outScan->source : null,
 
                     'dstart2' => null,
                     'in_time2' => null,
+                    'in_source2' => null,
                     'dend2' => null,
                     'out_time2' => null,
+                    'out_source2' => null,
 
                     'late_minutes' => $late,
                     'overtime_minutes' => $overtime,
 
                     'alasan' => null,
                 ];
-
             } else {
 
                 /* =========================
@@ -226,17 +226,47 @@ class MscanReportSheet implements
                     $scanTime = strtotime($scan->dscanned);
 
                     if ($scanTime < $pivot) {
-                        $shift1[] = $scan->dscanned;
+                        $shift1[] = $scan;
                     } else {
-                        $shift2[] = $scan->dscanned;
+                        $shift2[] = $scan;
                     }
                 }
 
-                $in1 = !empty($shift1) ? min($shift1) : null;
-                $out1 = !empty($shift1) ? max($shift1) : null;
+                $in1Scan = null;
+                $out1Scan = null;
+                if (!empty($shift1)) {
+                    $in1Time = null;
+                    $out1Time = null;
+                    foreach ($shift1 as $s) {
+                        $sTime = strtotime($s->dscanned);
+                        if ($in1Time === null || $sTime < $in1Time) {
+                            $in1Time = $sTime;
+                            $in1Scan = $s;
+                        }
+                        if ($out1Time === null || $sTime > $out1Time) {
+                            $out1Time = $sTime;
+                            $out1Scan = $s;
+                        }
+                    }
+                }
 
-                $in2 = !empty($shift2) ? min($shift2) : null;
-                $out2 = !empty($shift2) ? max($shift2) : null;
+                $in2Scan = null;
+                $out2Scan = null;
+                if (!empty($shift2)) {
+                    $in2Time = null;
+                    $out2Time = null;
+                    foreach ($shift2 as $s) {
+                        $sTime = strtotime($s->dscanned);
+                        if ($in2Time === null || $sTime < $in2Time) {
+                            $in2Time = $sTime;
+                            $in2Scan = $s;
+                        }
+                        if ($out2Time === null || $sTime > $out2Time) {
+                            $out2Time = $sTime;
+                            $out2Scan = $s;
+                        }
+                    }
+                }
 
                 $late = 0;
                 $overtime = 0;
@@ -244,39 +274,39 @@ class MscanReportSheet implements
                 /* =====================
                    LATE SHIFT 1
                 =====================*/
-                if ($first->dstart && $in1) {
+                if ($first->dstart && $in1Scan) {
 
-                    $scheduleStart = date('Y-m-d', strtotime($in1)) . ' ' . $first->dstart;
+                    $scheduleStart = date('Y-m-d', strtotime($in1Scan->dscanned)) . ' ' . $first->dstart;
 
                     $late = max(
                         0,
-                        floor((strtotime($in1) - strtotime($scheduleStart)) / 60)
+                        floor((strtotime($in1Scan->dscanned) - strtotime($scheduleStart)) / 60)
                     );
                 }
 
                 /* =====================
                    OVERTIME SHIFT 1
                 =====================*/
-                if ($first->dend && $out1) {
+                if ($first->dend && $out1Scan) {
 
-                    $scheduleEnd1 = date('Y-m-d', strtotime($out1)) . ' ' . $first->dend;
+                    $scheduleEnd1 = date('Y-m-d', strtotime($out1Scan->dscanned)) . ' ' . $first->dend;
 
                     $overtime += max(
                         0,
-                        floor((strtotime($out1) - strtotime($scheduleEnd1)) / 60)
+                        floor((strtotime($out1Scan->dscanned) - strtotime($scheduleEnd1)) / 60)
                     );
                 }
 
                 /* =====================
                    OVERTIME SHIFT 2
                 =====================*/
-                if ($first->dend2 && $out2) {
+                if ($first->dend2 && $out2Scan) {
 
-                    $scheduleEnd2 = date('Y-m-d', strtotime($out2)) . ' ' . $first->dend2;
+                    $scheduleEnd2 = date('Y-m-d', strtotime($out2Scan->dscanned)) . ' ' . $first->dend2;
 
                     $overtime += max(
                         0,
-                        floor((strtotime($out2) - strtotime($scheduleEnd2)) / 60)
+                        floor((strtotime($out2Scan->dscanned) - strtotime($scheduleEnd2)) / 60)
                     );
                 }
 
@@ -286,14 +316,18 @@ class MscanReportSheet implements
                     'cschedname' => $first->cschedname,
 
                     'dstart' => $first->dstart,
-                    'in_time' => $in1 ? date('H:i:s', strtotime($in1)) : null,
+                    'in_time' => $in1Scan ? date('H:i:s', strtotime($in1Scan->dscanned)) : null,
+                    'in_source' => $in1Scan ? $in1Scan->source : null,
                     'dend' => $first->dend,
-                    'out_time' => $out1 ? date('H:i:s', strtotime($out1)) : null,
+                    'out_time' => $out1Scan ? date('H:i:s', strtotime($out1Scan->dscanned)) : null,
+                    'out_source' => $out1Scan ? $out1Scan->source : null,
 
                     'dstart2' => $first->dstart2,
-                    'in_time2' => $in2 ? date('H:i:s', strtotime($in2)) : null,
+                    'in_time2' => $in2Scan ? date('H:i:s', strtotime($in2Scan->dscanned)) : null,
+                    'in_source2' => $in2Scan ? $in2Scan->source : null,
                     'dend2' => $first->dend2,
-                    'out_time2' => $out2 ? date('H:i:s', strtotime($out2)) : null,
+                    'out_time2' => $out2Scan ? date('H:i:s', strtotime($out2Scan->dscanned)) : null,
+                    'out_source2' => $out2Scan ? $out2Scan->source : null,
 
                     'late_minutes' => $late,
                     'overtime_minutes' => $overtime,
@@ -306,16 +340,11 @@ class MscanReportSheet implements
  * DATA IZIN
  * ========================= */
 
-        $izinQuery = DB::table('mrequest')
+        $izin = DB::table('mrequest')
             ->join('muser', 'muser.nid', '=', 'mrequest.nuserid')
             ->whereBetween('mrequest.drequest', [$this->start, $this->end])
-            ->where('muser.niddept', $this->dept);
-
-        if ($authUser && $authUser->ccompany) {
-            $izinQuery->where('muser.ccompany', $authUser->ccompany);
-        }
-
-        $izin = $izinQuery->select(
+            ->where('muser.niddept', $this->dept)
+            ->select(
                 'muser.cname',
                 'mrequest.drequest as date',
                 'mrequest.creason as alasan'
@@ -331,13 +360,17 @@ class MscanReportSheet implements
 
                 'dstart' => null,
                 'in_time' => null,
+                'in_source' => null,
                 'dend' => null,
                 'out_time' => null,
+                'out_source' => null,
 
                 'dstart2' => null,
                 'in_time2' => null,
+                'in_source2' => null,
                 'dend2' => null,
                 'out_time2' => null,
+                'out_source2' => null,
 
                 'late_minutes' => 0,
                 'overtime_minutes' => 0,
@@ -371,6 +404,37 @@ class MscanReportSheet implements
         ];
     }
 
+    private function formatTimeWithSource($time, $source)
+    {
+        if (empty($time) || $time === '-') {
+            return '-';
+        }
+        if (empty($source)) {
+            return $time;
+        }
+
+        $letter = '';
+        switch ($source) {
+            case 'face':
+                $letter = 'F';
+                break;
+            case 'manual':
+                $letter = 'M';
+                break;
+            case 'forgot':
+                $letter = 'L';
+                break;
+            case 'scan':
+                $letter = 'S';
+                break;
+            default:
+                $letter = strtoupper(substr($source, 0, 1));
+                break;
+        }
+
+        return $time . ' (' . $letter . ')';
+    }
+
     public function map($row): array
     {
         return [
@@ -379,17 +443,17 @@ class MscanReportSheet implements
             $row['cschedname'] ?? '-',
 
             $row['dstart'] ?? '-',
-            $row['in_time'] ?? '-',
+            $this->formatTimeWithSource($row['in_time'] ?? null, $row['in_source'] ?? null),
             $row['dend'] ?? '-',
-            $row['out_time'] ?? '-',
+            $this->formatTimeWithSource($row['out_time'] ?? null, $row['out_source'] ?? null),
 
             $row['dstart2'] ?? '-',
-            $row['in_time2'] ?? '-',
+            $this->formatTimeWithSource($row['in_time2'] ?? null, $row['in_source2'] ?? null),
             $row['dend2'] ?? '-',
-            $row['out_time2'] ?? '-',
+            $this->formatTimeWithSource($row['out_time2'] ?? null, $row['out_source2'] ?? null),
 
-            $row['late_minutes'] > 0 ? $row['late_minutes'].' menit' : '-',
-            $row['overtime_minutes'] > 0 ? $row['overtime_minutes'].' menit' : '-',
+            $row['late_minutes'] > 0 ? $row['late_minutes'] . ' menit' : '-',
+            $row['overtime_minutes'] > 0 ? $row['overtime_minutes'] . ' menit' : '-',
 
             $row['alasan'] ?? '-',
         ];
@@ -413,8 +477,14 @@ class MscanReportSheet implements
                     ? 'CENTRAL KITCHEN'
                     : strtoupper($deptRaw);
 
-                $tanggal = Carbon::parse($this->start)
-                    ->translatedFormat('l, d F Y');
+                if ($this->start === $this->end) {
+                    $tanggal = Carbon::parse($this->start)
+                        ->translatedFormat('l, d F Y');
+                } else {
+                    $tanggalStart = Carbon::parse($this->start)->translatedFormat('d F Y');
+                    $tanggalEnd = Carbon::parse($this->end)->translatedFormat('d F Y');
+                    $tanggal = $tanggalStart . ' - ' . $tanggalEnd;
+                }
 
                 // TITLE
                 $sheet->mergeCells('A1:N1');
