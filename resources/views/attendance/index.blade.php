@@ -2,10 +2,36 @@
 
 @section('content')
 <div class="container mt-4">
-    <div class="d-flex justify-content-end mb-2">
-        <a href="#" id="exportBtn" class="btn btn-success fw-semibold">
-            <i class="fas fa-file-excel me-1"></i> Export Laporan
-        </a>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0 fw-bold">HALAMAN ABSENSI</h4>
+        <div class="d-flex gap-2">
+            <!-- Filter Status Absen -->
+            <select id="attendanceStatusSelect" class="form-select fw-semibold" style="height: 38px; width: auto; min-width: 150px;" onchange="updateAttendanceStatus(this.value)">
+                <option value="present" selected>✅ Sudah Absen</option>
+                <option value="missing">❌ Belum Absen</option>
+            </select>
+
+            <!-- Filter Departemen -->
+            @if (auth()->check() && auth()->user()->fhrd == 2)
+            <select id="deptId" class="form-select fw-semibold" style="height: 38px; width: auto; min-width: 190px;" onchange="loadAttendance()">
+                <option value="">📍 Semua Departemen</option>
+                @foreach ($departments as $dept)
+                <option value="{{ $dept->nid }}">{{ $dept->cname }}</option>
+                @endforeach
+            </select>
+            @endif
+
+            <!-- Filter Tanggal -->
+            <button id="filterBtn" class="btn btn-outline-success" style="height:38px;" data-bs-toggle="modal"
+                data-bs-target="#dateFilterModal">
+                📅 <span id="filterLabel">Hari ini</span>
+            </button>
+
+            <!-- Export Laporan -->
+            <a href="#" id="exportBtn" class="btn btn-success fw-semibold d-inline-flex align-items-center" style="height: 38px;">
+                <i class="fas fa-file-excel me-1"></i> Export Laporan
+            </a>
+        </div>
     </div>
 
     <div class="card shadow-sm">
@@ -13,34 +39,8 @@
         <div class="card-header d-flex align-items-center bg-danger text-white">
             <!-- Kiri -->
             <h4 class="mb-0">
-                <i class="fas fa-calendar-alt me-2"></i>Laporan Absensi
+                <i class="fas fa-calendar-alt me-2" style="color: #1c0505ff;"></i>Laporan Absensi
             </h4>
-
-            <!-- Spacer -->
-            <div class="ms-auto d-flex align-items-center gap-2">
-                <!-- Filter Status Absen (baru) -->
-                <button id="attStatusBtn" class="btn btn-success fw-semibold" data-bs-toggle="modal"
-                    data-bs-target="#attStatusModal">
-                    <i class="fas fa-user-check me-1"></i>
-                    <span id="attStatusLabel">Sudah Absen</span>
-                </button>
-
-                <!-- Filter Departemen -->
-                @if (auth()->check() && auth()->user()->fhrd == 2)
-                <button id="deptFilterBtn" class="btn btn-success fw-semibold" data-bs-toggle="modal"
-                    data-bs-target="#deptFilterModal">
-                    <i class="fas fa-building me-1"></i>
-                    <span id="deptFilterLabel">Semua Departemen</span>
-                </button>
-                @endif
-
-                <!-- Filter Tanggal -->
-                <button id="filterBtn" class="btn btn-success fw-semibold" data-bs-toggle="modal"
-                    data-bs-target="#dateFilterModal">
-                    <i class="fas fa-filter me-1"></i>
-                    <span id="filterLabel">Hari ini</span>
-                </button>
-            </div>
         </div>
 
 
@@ -59,7 +59,7 @@
 
                 {{-- Tabel Absensi --}}
                 <div class="table-responsive" style="max-height:600px; overflow-y:auto;">
-                    <table class="table table-bordered table-striped align-middle text-center table-attendance">
+                    <table class="table table-bordered align-middle text-center table-attendance">
                         <thead class="table-dark text-center">
                             <tr>
                                 <th>Nama</th>
@@ -102,11 +102,17 @@
     </div>
 </div>
 
-@include('attendance.modal.modal_filter_department')
+
 
 @include('attendance.modal.modal_filter_date')
 
-@include('attendance.modal.modal_filter_status')
+<script>
+    window.APP = {
+        attendanceUrl: "{{ route('attendance.report') }}",
+        attendanceMissingUrl: "{{ route('attendance.missing') }}",
+        exportUrl: "{{ route('export-attendance-report') }}"
+    };
+</script>
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
@@ -154,4 +160,10 @@
 
 
 <script src="{{ asset('js/attendance.js') }}?v={{ time() }}"></script>
+<script>
+    function updateAttendanceStatus(value) {
+        attendanceStatus = value;
+        loadAttendance();
+    }
+</script>
 @endsection
