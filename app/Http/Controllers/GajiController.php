@@ -432,15 +432,14 @@ class GajiController extends Controller
         $row->save();
         $row->refresh()->regenerateSlipPdf();
 
-        if ($request->expectsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Payroll berhasil diperbarui.',
-                'data'    => ['id' => $row->id, 'total_gaji' => $row->total_gaji]
-            ]);
-        }
-
-        return redirect()->back()->with('success', 'Payroll berhasil diperbarui.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Payroll berhasil diperbarui.',
+            'data' => [
+                'id' => $row->id,
+                'total_gaji' => $row->total_gaji
+            ]
+        ]);
     }
 
     public function getLatestTunjangan(int|string $nid)
