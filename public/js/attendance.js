@@ -190,6 +190,48 @@ function loadAttendance() {
         });
 }
 
+function formatTimeWithSource(time, source) {
+    if (!time || time === "-") return "-";
+    
+    let badgeClass = "";
+    let letter = "";
+    let title = "";
+    
+    switch(source) {
+        case 'face':
+            badgeClass = 'bg-info text-white';
+            letter = 'F';
+            title = 'Face';
+            break;
+        case 'manual':
+            badgeClass = 'bg-warning text-dark';
+            letter = 'M';
+            title = 'Manual';
+            break;
+        case 'forgot':
+            badgeClass = 'bg-danger text-white';
+            letter = 'L';
+            title = 'Lupa Absen';
+            break;
+        case 'scan':
+            badgeClass = 'bg-primary text-white';
+            letter = 'S';
+            title = 'Scan';
+            break;
+        default:
+            return time;
+    }
+    
+    return `
+        <div class="d-flex align-items-center justify-content-center gap-1">
+            <span class="fw-semibold">${time}</span>
+            <span class="badge rounded-circle ${badgeClass}" 
+                  style="width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; font-size: 8px; padding: 0; font-weight: 700;" 
+                  title="${title}">${letter}</span>
+        </div>
+    `;
+}
+
 // PAGINATION & TABLE RENDER
 function displayAttendancePage() {
     const tableBody = document.getElementById("attendanceTableBody");
@@ -198,7 +240,7 @@ function displayAttendancePage() {
     const nextBtn = document.getElementById("nextBtn");
 
     if (!attendanceData.length) {
-        tableBody.innerHTML = `<tr><td colspan=14" class="text-center text-muted">Tidak ada data absensi</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="14" class="text-center text-muted">Tidak ada data absensi</td></tr>`;
         return;
     }
 
@@ -239,14 +281,14 @@ function displayAttendancePage() {
                 <td>${r.cschedname || "-"}</td>
 
                 <td>${r.dstart || "-"}</td>
-                <td>${r.in_time || "-"}</td>
+                <td>${formatTimeWithSource(r.in_time, r.in_source)}</td>
                 <td>${r.dend || "-"}</td>
-                <td>${r.out_time || "-"}</td>
+                <td>${formatTimeWithSource(r.out_time, r.out_source)}</td>
 
                 <td>${r.dstart2 || "-"}</td>
-                <td>${r.in_time2 || "-"}</td>
+                <td>${formatTimeWithSource(r.in_time2, r.in_source2)}</td>
                 <td>${r.dend2 || "-"}</td>
-                <td>${r.out_time2 || "-"}</td>
+                <td>${formatTimeWithSource(r.out_time2, r.out_source2)}</td>
 
                 <td class="${late ? "text-late" : ""}">
                 ${late ? late + " menit" : "-"}
