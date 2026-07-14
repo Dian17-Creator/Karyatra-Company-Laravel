@@ -12,7 +12,7 @@
             </select>
 
             <!-- Filter Departemen -->
-            @if (auth()->check() && auth()->user()->fhrd == 2)
+            @if (auth()->check() && auth()->user()->fhrd == 1)
             <select id="deptId" class="form-select fw-semibold" style="height: 38px; width: auto; min-width: 190px;" onchange="loadAttendance()">
                 <option value="">📍 Semua Departemen</option>
                 @foreach ($departments as $dept)
