@@ -6,7 +6,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\muser;
 use App\Models\Mowner;
+use App\Models\Mcompany;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+
 
 class LoginController extends Controller
 {
@@ -61,38 +65,78 @@ class LoginController extends Controller
     public function register(Request $request)
     {
         $request->validate([
-            'ccompany' => 'required|string|max:100',
-            'cname' => 'required|string|max:255',
-            'cemail' => 'required|email|unique:mowner,cemail|unique:muser,cemail',
-            'cpassword' => 'required|string',
+            'ccompany'  => 'required|string|max:100',
+            'cname'     => 'required|string|max:255',
+            'cpassword' => 'required|string|min:6',
         ]);
 
-        \DB::transaction(function () use ($request) {
+        $domain = Str::of($request->ccompany)
+            ->lower()
+            ->replaceMatches('/^(pt|cv)\s+/i', '')
+            ->replaceMatches('/[^a-z0-9]/', '');
+
+        $username = Str::of($request->cname)
+            ->lower()
+            ->replaceMatches('/[^a-z0-9]/', '');
+
+        $email = "{$username}@{$domain}";
+
+        if (Mcompany::where('cname', $request->ccompany)->exists()) {
+            return back()
+                ->withErrors([
+                    'ccompany' => 'Nama perusahaan sudah terdaftar.'
+                ])
+                ->withInput();
+        }
+
+        if (Mcompany::where('cemail', $domain)->exists()) {
+            return back()
+                ->withErrors([
+                    'ccompany' => 'Domain @ perusahaan sudah digunakan.'
+                ])
+                ->withInput();
+        }
+
+        if (
+            Mowner::where('cemail', $email)->exists() ||
+            muser::where('cemail', $email)->exists()
+        ) {
+            return back()
+                ->withErrors([
+                    'cname' => 'Nama tersebut sudah digunakan pada perusahaan ini.'
+                ])
+                ->withInput();
+        }
+
+        DB::transaction(function () use ($request, $domain, $email) {
+
+            Mcompany::create([
+                'cname'  => $request->ccompany,
+                'cemail' => $domain,
+            ]);
+
             Mowner::create([
-                'ccompany' => $request->ccompany,
-                'cname' => $request->cname,
-                'cemail' => $request->cemail,
+                'ccompany'  => $request->ccompany,
+                'cname'     => $request->cname,
+                'cemail'    => $email,
                 'cpassword' => Hash::make($request->cpassword),
-                'dcreated' => now(),
+                'dcreated'  => now(),
             ]);
 
             muser::create([
-                'ccompany' => $request->ccompany,
-                'cname' => $request->cname,
-                'cemail' => $request->cemail,
+                'ccompany'  => $request->ccompany,
+                'cname'     => $request->cname,
+                'cemail'    => $email,
                 'cpassword' => Hash::make($request->cpassword),
-                'dcreated' => now(),
-                'fadmin' => 1,
-                'fsuper' => 1,
-                'fhrd' => 1,
-                'factive' => 1,
+                'dcreated'  => now(),
+                'fadmin'    => 1,
+                'fsuper'    => 1,
+                'fhrd'      => 1,
+                'factive'   => 1,
             ]);
         });
 
-        // Opsional: Langsung login setelah daftar
-        // Auth::login($owner); 
-        // Note: Mowner harus implement Authenticatable jika ingin pakai Auth::login($owner)
-
-        return redirect('/login')->with('success', 'Registrasi berhasil! Silakan login.');
+        return redirect('/login')
+            ->with('success', 'Registrasi berhasil! Silakan login.');
     }
 }
