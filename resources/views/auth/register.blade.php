@@ -65,6 +65,41 @@
             text-decoration: none;
             font-weight: 600;
         }
+
+        /* Email field – read-only style */
+        #cemail {
+            background-color: #f8f9fa;
+            color: #555;
+        }
+
+        /* Password toggle button */
+        .input-group .btn-toggle-password {
+            border: 1px solid #ced4da;
+            border-left: none;
+            border-radius: 0 8px 8px 0;
+            background: #fff;
+            color: #888;
+            transition: color 0.2s;
+        }
+
+        .input-group .btn-toggle-password:hover {
+            color: #ff6a00;
+        }
+
+        .input-group .form-control {
+            border-radius: 8px 0 0 8px;
+        }
+
+        /* Sembunyikan icon mata bawaan browser (Edge & Chrome) */
+        #cpassword::-ms-reveal,
+        #cpassword::-ms-clear {
+            display: none;
+        }
+
+        #cpassword::-webkit-credentials-auto-fill-button,
+        #cpassword::-webkit-textfield-decoration-container {
+            display: none !important;
+        }
     </style>
 </head>
 
@@ -81,24 +116,37 @@
 
         <form action="{{ url('/register') }}" method="POST">
             @csrf
+
             <div class="mb-3 text-start">
                 <label for="ccompany" class="form-label">Nama Perusahaan</label>
-                <input type="text" name="ccompany" id="ccompany" class="form-control" placeholder="Contoh: Matahati" required autofocus>
+                <input type="text" name="ccompany" id="ccompany" class="form-control"
+                    placeholder="Contoh: Matahati" value="{{ old('ccompany') }}" required autofocus>
             </div>
 
             <div class="mb-3 text-start">
-                <label for="cname" class="form-label">Nama Lengkap</label>
-                <input type="text" name="cname" id="cname" class="form-control" placeholder="Nama Anda" required>
+                <label for="cname" class="form-label">Nama</label>
+                <input type="text" name="cname" id="cname" class="form-control"
+                    placeholder="Nama Anda" value="{{ old('cname') }}" required>
             </div>
 
             <div class="mb-3 text-start">
-                <label for="cemail" class="form-label">Email</label>
-                <input type="email" name="cemail" id="cemail" class="form-control" placeholder="email@perusahaan" required>
+                <label for="cemail" class="form-label">Email Perusahaan</label>
+                <input type="text" name="cemail" id="cemail" class="form-control"
+                    placeholder="" value="{{ old('cemail') }}" readonly>
+                <!-- <small class="text-muted">Dibuat otomatis dari nama &amp; nama perusahaan</small> -->
             </div>
 
             <div class="mb-4 text-start">
                 <label for="cpassword" class="form-label">Password</label>
-                <input type="password" name="cpassword" id="cpassword" class="form-control" required>
+                <div class="input-group">
+                    <input type="password" name="cpassword" id="cpassword" class="form-control" required>
+                    <button type="button" class="btn btn-toggle-password" id="togglePassword" tabindex="-1">
+                        <i class="bi bi-eye" id="togglePasswordIcon"></i>
+                    </button>
+                </div>
+                <small class="text-muted mt-1 d-block">
+                    <i class="bi bi-info-circle"></i> Minimal 6 karakter
+                </small>
             </div>
 
             <button type="submit" class="btn btn-register">Daftar Sekarang</button>
@@ -110,6 +158,53 @@
             <small class="d-block mt-2">© {{ date('Y') }} Karyatra Backoffice</small>
         </div>
     </div>
+
+    <script>
+        /**
+         * AUTO-GENERATE EMAIL
+         * Mirrors the server-side logic in LoginController@register:
+         *   domain   = ccompany → lowercase, strip leading "PT " / "CV ", keep [a-z0-9]
+         *   username = cname    → lowercase, keep [a-z0-9]
+         *   email    = username@domain
+         */
+        function toDomain(companyName) {
+            return companyName
+                .toLowerCase()
+                .replace(/^(pt|cv)\s+/i, '') // strip PT / CV prefix
+                .replace(/[^a-z0-9]/g, ''); // keep only alphanumeric
+        }
+
+        function toUsername(name) {
+            return name.toLowerCase().replace(/[^a-z0-9]/g, '');
+        }
+
+        function updateEmail() {
+            const domain = toDomain(document.getElementById('ccompany').value);
+            const username = toUsername(document.getElementById('cname').value);
+
+            document.getElementById('cemail').value =
+                (username || domain) ? username + '@' + domain : '';
+        }
+
+        document.getElementById('ccompany').addEventListener('input', updateEmail);
+        document.getElementById('cname').addEventListener('input', updateEmail);
+
+        // Run once on load to restore old() values after validation error
+        updateEmail();
+
+        /**
+         * PASSWORD SHOW / HIDE TOGGLE
+         */
+        const toggleBtn = document.getElementById('togglePassword');
+        const toggleIcon = document.getElementById('togglePasswordIcon');
+        const passInput = document.getElementById('cpassword');
+
+        toggleBtn.addEventListener('click', function() {
+            const isHidden = passInput.type === 'password';
+            passInput.type = isHidden ? 'text' : 'password';
+            toggleIcon.className = isHidden ? 'bi bi-eye-slash' : 'bi bi-eye';
+        });
+    </script>
 
 </body>
 
