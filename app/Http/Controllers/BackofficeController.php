@@ -327,23 +327,48 @@ class BackofficeController extends Controller
             'cemail' => 'required|string|max:255',
         ]);
 
-        $authUser = Auth::user();
+        $authUser = Auth::user() ?? Auth::guard('owner')->user();
         $company  = Mcompany::where('cname', $authUser->ccompany)->firstOrFail();
 
-        $oldCname = $company->cname;
+        $oldCname  = $company->cname;
+        $oldCemail = $company->cemail;
+        $newCname  = $request->cname;
+        $newCemail = $request->cemail;
 
-        $company->update([
-            'cname'  => $request->cname,
-            'cemail' => $request->cemail,
-        ]);
+        DB::transaction(function () use ($company, $oldCname, $oldCemail, $newCname, $newCemail) {
 
-        // Sinkronisasi ccompany di muser & mowner jika nama company berubah
-        if ($oldCname !== $request->cname) {
-            muser::where('ccompany', $oldCname)->update(['ccompany' => $request->cname]);
-            Mowner::where('ccompany', $oldCname)->update(['ccompany' => $request->cname]);
-        }
+            // 1. Update tabel mcompany
+            $company->update([
+                'cname'  => $newCname,
+                'cemail' => $newCemail,
+            ]);
 
-        return back()->with('success', 'Data company berhasil diperbarui.');
+            // 2. Jika nama company berubah, sinkronisasi ccompany di muser & mowner
+            if ($oldCname !== $newCname) {
+                muser::where('ccompany', $oldCname)->update(['ccompany' => $newCname]);
+                Mowner::where('ccompany', $oldCname)->update(['ccompany' => $newCname]);
+            }
+
+            // 3. Jika domain email berubah, update cemail semua user & owner
+            //    Hanya ganti bagian domain setelah '@', username tetap
+            if ($oldCemail !== $newCemail) {
+                $users = muser::where('ccompany', $newCname)->get();
+                foreach ($users as $u) {
+                    $parts     = explode('@', $u->cemail, 2);
+                    $u->cemail = $parts[0] . '@' . $newCemail;
+                    $u->save();
+                }
+
+                $owners = Mowner::where('ccompany', $newCname)->get();
+                foreach ($owners as $o) {
+                    $parts     = explode('@', $o->cemail, 2);
+                    $o->cemail = $parts[0] . '@' . $newCemail;
+                    $o->save();
+                }
+            }
+        });
+
+        return back()->with('success', 'Data company berhasil diperbarui. Email semua user telah disesuaikan dengan domain baru.');
     }
 
     public function addDepartment(Request $request)
