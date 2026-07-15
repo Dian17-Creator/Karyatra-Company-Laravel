@@ -75,6 +75,7 @@ Route::middleware(['auth:web,owner'])->group(function () {
     Route::put('/backoffice/update-department/{id}', [BackofficeController::class, 'updateDepartment'])->name('backoffice.updateDepartment');
     Route::post('/backoffice/delete-department', [BackofficeController::class, 'deleteDepartment'])->name('backoffice.deleteDepartment');
     Route::put('/backoffice/updateUser/{id}', [BackofficeController::class, 'updateUser'])->name('backoffice.updateUser');
+    Route::put('/backoffice/update-company', [BackofficeController::class, 'updateCompany'])->name('backoffice.updateCompany');
     Route::post('/attendance/import-fingerprint', [BackofficeController::class, 'importFingerprint'])->name('attendance.importFingerprint');
 
     // === ScheduleController ===

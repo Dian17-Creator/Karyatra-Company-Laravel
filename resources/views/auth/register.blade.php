@@ -90,6 +90,10 @@
             border-radius: 8px 0 0 8px;
         }
 
+        .icon-password {
+            cursor: pointer;
+        }
+
         /* Sembunyikan icon mata bawaan browser (Edge & Chrome) */
         #cpassword::-ms-reveal,
         #cpassword::-ms-clear {

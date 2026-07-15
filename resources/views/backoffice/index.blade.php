@@ -7,6 +7,7 @@ $rekenings = $rekenings ?? collect();
 $devices = $devices ?? collect();
 $admins = $admins ?? collect();
 $deptLocations = $deptLocations ?? collect();
+$company = $company ?? null;
 @endphp
 
 @section('content')
@@ -39,6 +40,8 @@ $deptLocations = $deptLocations ?? collect();
     @endif
 
     @include('backoffice.component.master_department')
+
+    @include('backoffice.component.master_company')
 
     {{-- ====== TABEL USER ====== --}}
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">

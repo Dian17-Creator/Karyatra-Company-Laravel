@@ -12,6 +12,8 @@ use App\Models\mdepartment;
 use App\Models\Mrekening;
 use App\Models\AdminDevice;
 use App\Models\Tdeptlokasi;
+use App\Models\Mcompany;
+use App\Models\Mowner;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -22,7 +24,7 @@ class BackofficeController extends Controller
 {
     public function index(Request $request)
     {
-        $authUser = Auth::user();
+        $authUser = Auth::user() ?? Auth::guard('owner')->user();
         $query = muser::with(['department', 'rekening'])->orderBy('cname');
 
         if ($authUser && $authUser->ccompany) {
@@ -107,13 +109,17 @@ class BackofficeController extends Controller
         }
         $admins = $adminsQuery->orderBy('cname')->get();
 
+        // Ambil data company milik user yang login
+        $company = Mcompany::where('cname', $authUser->ccompany)->first();
+
         return view('backoffice.index', compact(
             'users',
             'departments',
             'rekenings',
             'devices',
             'admins',
-            'deptLocations'
+            'deptLocations',
+            'company'
         ));
     }
 
@@ -308,6 +314,36 @@ class BackofficeController extends Controller
         });
 
         return back()->with('success', 'Data user berhasil diperbarui.');
+    }
+
+    public function updateCompany(Request $request)
+    {
+        if (Auth::user()->fsuper != 1) {
+            abort(403, 'Anda tidak memiliki izin untuk mengubah data company.');
+        }
+
+        $request->validate([
+            'cname'  => 'required|string|max:255',
+            'cemail' => 'required|string|max:255',
+        ]);
+
+        $authUser = Auth::user();
+        $company  = Mcompany::where('cname', $authUser->ccompany)->firstOrFail();
+
+        $oldCname = $company->cname;
+
+        $company->update([
+            'cname'  => $request->cname,
+            'cemail' => $request->cemail,
+        ]);
+
+        // Sinkronisasi ccompany di muser & mowner jika nama company berubah
+        if ($oldCname !== $request->cname) {
+            muser::where('ccompany', $oldCname)->update(['ccompany' => $request->cname]);
+            Mowner::where('ccompany', $oldCname)->update(['ccompany' => $request->cname]);
+        }
+
+        return back()->with('success', 'Data company berhasil diperbarui.');
     }
 
     public function addDepartment(Request $request)
