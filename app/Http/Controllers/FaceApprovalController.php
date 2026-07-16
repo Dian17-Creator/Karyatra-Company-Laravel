@@ -75,12 +75,8 @@ class FaceApprovalController extends Controller
         }
         $user = $userQuery->findOrFail($id);
 
-        if ($auth && $auth->ccompany && $user->ccompany !== $auth->ccompany) {
-            abort(403, "Tidak memiliki akses ke user ini");
-        }
-
         // Jika bukan HR → batasi departemen
-        if (!$auth->fhrd && $user->niddept !== $auth->niddept) {
+        if (!$auth->fhrd && (int)$user->niddept !== (int)$auth->niddept) {
             abort(403, "Tidak memiliki akses ke user ini");
         }
 
@@ -128,12 +124,8 @@ class FaceApprovalController extends Controller
         }
         $user = $userQuery->findOrFail($id);
 
-        if ($auth && $auth->ccompany && $user->ccompany !== $auth->ccompany) {
-            abort(403, "Tidak memiliki akses ke user ini");
-        }
-
         // Jika bukan HR → batasi departemen
-        if (!$auth->fhrd && $user->niddept !== $auth->niddept) {
+        if (!$auth->fhrd && (int)$user->niddept !== (int)$auth->niddept) {
             abort(403, "Tidak memiliki akses ke user ini");
         }
 
@@ -170,12 +162,8 @@ class FaceApprovalController extends Controller
         }
         $user = $userQuery->findOrFail($id);
 
-        if ($auth && $auth->ccompany && $user->ccompany !== $auth->ccompany) {
-            abort(403, "Tidak memiliki akses ke user ini");
-        }
-
         // Jika bukan HR → batasi departemen
-        if (!$auth->fhrd && $user->niddept !== $auth->niddept) {
+        if (!$auth->fhrd && (int)$user->niddept !== (int)$auth->niddept) {
             abort(403, "Tidak memiliki akses ke user ini");
         }
 
