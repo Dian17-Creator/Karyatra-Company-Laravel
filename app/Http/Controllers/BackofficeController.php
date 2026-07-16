@@ -316,6 +316,39 @@ class BackofficeController extends Controller
         return back()->with('success', 'Data user berhasil diperbarui.');
     }
 
+    public function checkCompany(Request $request)
+    {
+        $authUser = Auth::user() ?? Auth::guard('owner')->user();
+
+        $company = Mcompany::where('cname', $authUser->ccompany)->first();
+
+        $query = Mcompany::query();
+
+        if ($company) {
+            $query->where('id', '!=', $company->id); // ganti id jika PK tabelmu bukan id
+        }
+
+        $nameExists = false;
+        $domainExists = false;
+
+        if ($request->filled('cname')) {
+            $nameExists = (clone $query)
+                ->whereRaw('LOWER(cname)=?', [strtolower(trim($request->cname))])
+                ->exists();
+        }
+
+        if ($request->filled('cemail')) {
+            $domainExists = (clone $query)
+                ->whereRaw('LOWER(cemail)=?', [strtolower(trim($request->cemail))])
+                ->exists();
+        }
+
+        return response()->json([
+            'name_exists'   => $nameExists,
+            'domain_exists' => $domainExists
+        ]);
+    }
+
     public function updateCompany(Request $request)
     {
         if (Auth::user()->fsuper != 1) {

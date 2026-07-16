@@ -79,6 +79,7 @@ Route::middleware(['auth:web,owner'])->group(function () {
     Route::put('/backoffice/updateUser/{id}', [BackofficeController::class, 'updateUser'])->name('backoffice.updateUser');
     Route::put('/backoffice/update-company', [BackofficeController::class, 'updateCompany'])->name('backoffice.updateCompany');
     Route::post('/attendance/import-fingerprint', [BackofficeController::class, 'importFingerprint'])->name('attendance.importFingerprint');
+    Route::post('/backoffice/company/check', [BackofficeController::class, 'checkCompany'])->name('backoffice.checkCompany');
 
     // === ScheduleController ===
     Route::get('/schedule', [ScheduleController::class, 'index'])->name('schedule.index');
