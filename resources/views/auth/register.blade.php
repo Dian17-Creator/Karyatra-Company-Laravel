@@ -123,8 +123,18 @@
 
             <div class="mb-3 text-start">
                 <label for="ccompany" class="form-label">Nama Perusahaan</label>
-                <input type="text" name="ccompany" id="ccompany" class="form-control"
-                    placeholder="Contoh: Matahati" value="{{ old('ccompany') }}" required autofocus>
+                <input
+                    type="text"
+                    name="ccompany"
+                    id="ccompany"
+                    class="form-control"
+                    placeholder="Contoh: Matahati"
+                    value="{{ old('ccompany') }}"
+                    required
+                    autofocus>
+
+                <small id="companyStatus" class="mt-1 d-block"></small>
+
             </div>
 
             <div class="mb-3 text-start">
@@ -153,7 +163,7 @@
                 </small>
             </div>
 
-            <button type="submit" class="btn btn-register">Daftar Sekarang</button>
+            <button id="registerBtn" type="submit" class="btn btn-register">Daftar Sekarang</button>
         </form>
 
         <div class="footer mt-2">
@@ -207,6 +217,67 @@
             const isHidden = passInput.type === 'password';
             passInput.type = isHidden ? 'text' : 'password';
             toggleIcon.className = isHidden ? 'bi bi-eye-slash' : 'bi bi-eye';
+        });
+
+        let debounceTimer;
+
+        const companyInput = document.getElementById('ccompany');
+        const companyStatus = document.getElementById('companyStatus');
+        const registerBtn = document.getElementById('registerBtn');
+
+        companyInput.addEventListener('input', function() {
+
+            updateEmail();
+
+            clearTimeout(debounceTimer);
+
+            companyStatus.textContent = "";
+            companyInput.classList.remove("is-valid", "is-invalid");
+
+            const company = companyInput.value.trim();
+
+            if (company.length < 2) {
+                registerBtn.disabled = false;
+                return;
+            }
+
+            debounceTimer = setTimeout(() => {
+
+                fetch(`/register/check-company?ccompany=${encodeURIComponent(company)}`)
+                    .then(response => response.json())
+                    .then(data => {
+
+                        if (data.exists) {
+
+                            companyInput.classList.add("is-invalid");
+                            companyInput.classList.remove("is-valid");
+
+                            companyStatus.className =
+                                "text-danger mt-1 d-block";
+
+                            companyStatus.innerHTML =
+                                '<i class="bi bi-x-circle"></i> Nama perusahaan sudah terdaftar';
+
+                            registerBtn.disabled = true;
+
+                        } else {
+
+                            companyInput.classList.add("is-valid");
+                            companyInput.classList.remove("is-invalid");
+
+                            companyStatus.className =
+                                "text-success mt-1 d-block";
+
+                            companyStatus.innerHTML =
+                                '<i class="bi bi-check-circle"></i> Nama perusahaan tersedia';
+
+                            registerBtn.disabled = false;
+                        }
+
+                    });
+
+            }, 500);
+
         });
     </script>
 

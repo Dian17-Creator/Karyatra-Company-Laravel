@@ -62,6 +62,23 @@ class LoginController extends Controller
         return view('auth.register');
     }
 
+    public function checkCompany(Request $request)
+    {
+        $company = trim($request->ccompany);
+
+        if ($company === '') {
+            return response()->json([
+                'exists' => false
+            ]);
+        }
+
+        $exists = Mcompany::where('cname', $company)->exists();
+
+        return response()->json([
+            'exists' => $exists
+        ]);
+    }
+
     public function register(Request $request)
     {
         $request->validate([
