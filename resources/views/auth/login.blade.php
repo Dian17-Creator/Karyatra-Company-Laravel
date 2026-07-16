@@ -20,12 +20,13 @@
 
         .login-card {
             background: #fff;
-            border-radius: 15px;
+            border-radius: 15px !important;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             width: 100%;
             max-width: 420px;
             padding: 35px;
             text-align: center;
+            overflow: hidden;
         }
 
         .login-card h3 {
@@ -80,43 +81,71 @@
             font-size: 14px;
             color: #666;
         }
+
+        .login-header {
+            background: #1b1b1b;
+            color: #ffffff;
+            padding: 20px 32px;
+            text-align: center;
+        }
+
+        .login-header h2 {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin: 0;
+            color: #ffffff;
+        }
+
+        .login-body {
+            padding: 30px 35px 35px;
+        }
     </style>
 </head>
 
 <body>
 
-    <div class="login-card">
-        <h3>LOGIN</h3>
+    <div class="login-card" style="padding: 0 !important;">
 
-        {{-- Tampilkan pesan error jika ada --}}
-        @if ($errors->any())
-        <div class="alert alert-danger">
-            {{ $errors->first() }}
+        <div class="login-header">
+            <h2>LOGIN</h2>
         </div>
-        @endif
 
-        {{-- Form Login --}}
-        <form action="{{ url('/login') }}" method="POST">
-            @csrf
-            <div class="mb-3 text-start">
-                <label for="cemail" class="form-label">Email</label>
-                <input type="email" name="cemail" id="cemail" class="form-control" required autofocus>
+        <div class="login-body">
+
+            {{-- Tampilkan pesan error jika ada --}}
+            @if ($errors->any())
+            <div class="alert alert-danger">
+                {{ $errors->first() }}
+            </div>
+            @endif
+
+            {{-- Form Login --}}
+            <form action="{{ url('/login') }}" method="POST">
+                @csrf
+                <div class="mb-3 text-start">
+                    <label for="cemail" class="form-label">Email</label>
+                    <input type="email" name="cemail" id="cemail" class="form-control" required autofocus>
+                </div>
+
+                <div class="mb-4 text-start password-wrapper">
+                    <label for="cpassword" class="form-label">Password</label>
+                    <input type="password" name="cpassword" id="cpassword" class="form-control" required>
+                    <i class="bi bi-eye toggle-password" id="togglePassword"></i>
+                </div>
+
+                <button type="submit" class="btn btn-login">Masuk</button>
+            </form>
+
+            <div class="footer mt-2">
+                <span>Belum Punya Akun? <a href="{{ url('/register') }}" style="color: #ff6a00; text-decoration: none; font-weight: 600;">Daftar</a></span>
+                <br>
+                <small class="d-block mt-2">© {{ date('Y') }} Karyatra Backoffice</small>
             </div>
 
-            <div class="mb-4 text-start password-wrapper">
-                <label for="cpassword" class="form-label">Password</label>
-                <input type="password" name="cpassword" id="cpassword" class="form-control" required>
-                <i class="bi bi-eye toggle-password" id="togglePassword"></i>
-            </div>
-
-            <button type="submit" class="btn btn-login">Masuk</button>
-        </form>
-
-        <div class="footer mt-2">
-            <span>Belum Punya Akun? <a href="{{ url('/register') }}" style="color: #ff6a00; text-decoration: none; font-weight: 600;">Daftar</a></span>
-            <br>
-            <small class="d-block mt-2">© {{ date('Y') }} Karyatra Backoffice</small>
         </div>
+
     </div>
 
     <script>
