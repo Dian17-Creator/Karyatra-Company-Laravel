@@ -46,11 +46,13 @@ Route::get('/slip/{filename}', function ($filename) {
 });
 
 // Login & Registration (LoginController)
-Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
+
 Route::post('/login', [LoginController::class, 'login']);
-Route::get('/register', [LoginController::class, 'showRegisterForm']);
 Route::post('/register', [LoginController::class, 'register']);
+Route::get('/register', [LoginController::class, 'showRegisterForm']);
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
+Route::get('/register/check-company', [LoginController::class, 'checkCompany']);
 
 // Notifikasi Email Cron (NotifikasiController)
 Route::get('/notifikasi/send-emails', [NotifikasiController::class, 'sendEmails']);
