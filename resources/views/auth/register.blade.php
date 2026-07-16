@@ -20,19 +20,14 @@
         }
 
         .register-card {
-            background: #fff;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 450px;
-            padding: 35px;
-            text-align: center;
-        }
-
-        .register-card h3 {
-            margin-bottom: 25px;
-            color: #333;
-            font-weight: 600;
+            background: #fff !important;
+            border-radius: 15px !important;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+            width: 100% !important;
+            max-width: 450px !important;
+            overflow: hidden !important;
+            text-align: center !important;
+            padding: 0 !important;
         }
 
         .form-control {
@@ -94,6 +89,26 @@
             cursor: pointer;
         }
 
+        .register-header {
+            background: #1b1b1b;
+            color: #ffffff;
+            padding: 20px 32px;
+            text-align: center;
+        }
+
+        .register-header h2 {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin: 0;
+            color: #ffffff;
+        }
+
+        .register-body {
+            padding: 30px 35px 35px;
+        }
+
         /* Sembunyikan icon mata bawaan browser (Edge & Chrome) */
         #cpassword::-ms-reveal,
         #cpassword::-ms-clear {
@@ -109,68 +124,72 @@
 
 <body>
 
-    <div class="register-card">
-        <h3>REGISTRASI</h3>
-
-        @if ($errors->any())
-        <div class="alert alert-danger">
-            {{ $errors->first() }}
+    <div class="register-card" style="padding: 0 !important;">
+        <div class="register-header">
+            <h2>REGISTRASI</h2>
         </div>
-        @endif
+        <div class="register-body">
 
-        <form action="{{ url('/register') }}" method="POST">
-            @csrf
-
-            <div class="mb-3 text-start">
-                <label for="ccompany" class="form-label">Nama Perusahaan</label>
-                <input
-                    type="text"
-                    name="ccompany"
-                    id="ccompany"
-                    class="form-control"
-                    placeholder="Contoh: Matahati"
-                    value="{{ old('ccompany') }}"
-                    required
-                    autofocus>
-
-                <small id="companyStatus" class="mt-1 d-block"></small>
-
+            @if ($errors->any())
+            <div class="alert alert-danger">
+                {{ $errors->first() }}
             </div>
+            @endif
 
-            <div class="mb-3 text-start">
-                <label for="cname" class="form-label">Nama</label>
-                <input type="text" name="cname" id="cname" class="form-control"
-                    placeholder="Nama Anda" value="{{ old('cname') }}" required>
-            </div>
+            <form action="{{ url('/register') }}" method="POST">
+                @csrf
 
-            <div class="mb-3 text-start">
-                <label for="cemail" class="form-label">Email Perusahaan</label>
-                <input type="text" name="cemail" id="cemail" class="form-control"
-                    placeholder="" value="{{ old('cemail') }}" readonly>
-                <!-- <small class="text-muted">Dibuat otomatis dari nama &amp; nama perusahaan</small> -->
-            </div>
+                <div class="mb-3 text-start">
+                    <label for="ccompany" class="form-label">Nama Perusahaan</label>
+                    <input
+                        type="text"
+                        name="ccompany"
+                        id="ccompany"
+                        class="form-control"
+                        placeholder="Contoh: Matahati"
+                        value="{{ old('ccompany') }}"
+                        required
+                        autofocus>
 
-            <div class="mb-4 text-start">
-                <label for="cpassword" class="form-label">Password</label>
-                <div class="input-group">
-                    <input type="password" name="cpassword" id="cpassword" class="form-control" required>
-                    <button type="button" class="btn btn-toggle-password" id="togglePassword" tabindex="-1">
-                        <i class="bi bi-eye" id="togglePasswordIcon"></i>
-                    </button>
+                    <small id="companyStatus" class="mt-1 d-block"></small>
+
                 </div>
-                <small class="text-muted mt-1 d-block">
-                    <i class="bi bi-info-circle"></i> Minimal 6 karakter
-                </small>
+
+                <div class="mb-3 text-start">
+                    <label for="cname" class="form-label">Nama</label>
+                    <input type="text" name="cname" id="cname" class="form-control"
+                        placeholder="Nama Anda" value="{{ old('cname') }}" required>
+                </div>
+
+                <div class="mb-3 text-start">
+                    <label for="cemail" class="form-label">Email Perusahaan</label>
+                    <input type="text" name="cemail" id="cemail" class="form-control"
+                        placeholder="" value="{{ old('cemail') }}" readonly>
+                    <!-- <small class="text-muted">Dibuat otomatis dari nama &amp; nama perusahaan</small> -->
+                </div>
+
+                <div class="mb-4 text-start">
+                    <label for="cpassword" class="form-label">Password</label>
+                    <div class="input-group">
+                        <input type="password" name="cpassword" id="cpassword" class="form-control" required>
+                        <button type="button" class="btn btn-toggle-password" id="togglePassword" tabindex="-1">
+                            <i class="bi bi-eye" id="togglePasswordIcon"></i>
+                        </button>
+                    </div>
+                    <small class="text-muted mt-1 d-block">
+                        <i class="bi bi-info-circle"></i> Minimal 6 karakter
+                    </small>
+                </div>
+
+                <button id="registerBtn" type="submit" class="btn btn-register">Daftar Sekarang</button>
+            </form>
+
+            <div class="footer mt-2">
+                <span>Sudah Punya Akun? <a href="{{ url('/login') }}">Login</a></span>
+                <br>
+                <small class="d-block mt-2">© {{ date('Y') }} Karyatra Backoffice</small>
             </div>
-
-            <button id="registerBtn" type="submit" class="btn btn-register">Daftar Sekarang</button>
-        </form>
-
-        <div class="footer mt-2">
-            <span>Sudah Punya Akun? <a href="{{ url('/login') }}">Login</a></span>
-            <br>
-            <small class="d-block mt-2">© {{ date('Y') }} Karyatra Backoffice</small>
-        </div>
+        </div>{{-- end register-body --}}
     </div>
 
     <script>
