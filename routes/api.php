@@ -2,7 +2,10 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ScheduleController;
-use App\Http\Controllers\BackofficeController;
+use App\Http\Controllers\Backoffice\LogController;
+use App\Http\Controllers\Backoffice\UserController;
+use App\Http\Controllers\Backoffice\DepartmentController;
+use App\Http\Controllers\Backoffice\BankController;
 use App\Http\Controllers\PayrollCalculationController;
 use App\Http\Controllers\MagendaController;
 use App\Http\Controllers\DeviceTokenController;
@@ -10,7 +13,7 @@ use App\Http\Controllers\NotifikasiController;
 use App\Http\Controllers\FaceApprovalController;
 use App\Http\Controllers\GajiController;
 
-Route::get('/logs/{userId}', [BackofficeController::class, 'apiLogs']);
+Route::get('/logs/{userId}', [LogController::class, 'apiLogs']);
 Route::get('/schedule/{userId}', [ScheduleController::class, 'apiUserSchedule']);
 Route::get('/schedule/today/{userId}', [ScheduleController::class, 'apiTodayShift']);
 Route::prefix('user/gaji')->group(function () {
@@ -37,7 +40,7 @@ Route::post('/face-approval/{id}/approve', [FaceApprovalController::class, 'apiA
 Route::post('/face-approval/{id}/reject', [FaceApprovalController::class, 'apiReject']);
 
 // Store User Api
-Route::post('/user/store', [BackofficeController::class, 'apiStoreUser']);
-Route::get('/department/list', [BackofficeController::class, 'apiDepartmentList']);
-Route::get('/bank/list', [BackofficeController::class, 'apiBankList']);
-Route::get('/mandiri/rekening', [BackofficeController::class, 'apiMandiriRekening']);
+Route::post('/user/store', [UserController::class, 'apiStoreUser']);
+Route::get('/department/list', [DepartmentController::class, 'apiDepartmentList']);
+Route::get('/bank/list', [BankController::class, 'apiBankList']);
+Route::get('/mandiri/rekening', [BankController::class, 'apiMandiriRekening']);

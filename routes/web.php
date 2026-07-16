@@ -1,7 +1,14 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\BackofficeController;
+use App\Http\Controllers\Backoffice\DashboardController;
+use App\Http\Controllers\Backoffice\UserController;
+use App\Http\Controllers\Backoffice\CompanyController;
+use App\Http\Controllers\Backoffice\DepartmentController;
+use App\Http\Controllers\Backoffice\RequestController;
+use App\Http\Controllers\Backoffice\LogController;
+use App\Http\Controllers\Backoffice\FingerprintController;
+use App\Http\Controllers\Backoffice\BankController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\MagendaController;
 use App\Http\Controllers\AttendanceController;
@@ -65,21 +72,21 @@ Route::get('/notifikasi/send-emails', [NotifikasiController::class, 'sendEmails'
 
 Route::middleware(['auth:web,owner'])->group(function () {
 
-    // === BackofficeController ===
-    Route::get('/backoffice', [BackofficeController::class, 'index'])->name('backoffice.index');
-    Route::post('/backoffice/add', [BackofficeController::class, 'storeUser'])->name('backoffice.add');
-    Route::post('/backoffice/delete-logs', [BackofficeController::class, 'deleteLogs'])->name('backoffice.deleteLogs');
-    Route::post('/backoffice/delete-requests', [BackofficeController::class, 'deleteRequests'])->name('backoffice.deleteRequests');
-    Route::get('/backoffice/logs/{id}', [BackofficeController::class, 'viewLogs'])->name('backoffice.viewLogs');
-    Route::get('/backoffice/requests/{id}', [BackofficeController::class, 'viewRequests'])->name('backoffice.viewRequests');
-    Route::get('/backoffice/requestcard/{id}', [BackofficeController::class, 'viewRequestcard'])->name('backoffice.viewRequestcard');
-    Route::post('/backoffice/add-department', [BackofficeController::class, 'addDepartment'])->name('backoffice.addDepartment');
-    Route::put('/backoffice/update-department/{id}', [BackofficeController::class, 'updateDepartment'])->name('backoffice.updateDepartment');
-    Route::post('/backoffice/delete-department', [BackofficeController::class, 'deleteDepartment'])->name('backoffice.deleteDepartment');
-    Route::put('/backoffice/updateUser/{id}', [BackofficeController::class, 'updateUser'])->name('backoffice.updateUser');
-    Route::put('/backoffice/update-company', [BackofficeController::class, 'updateCompany'])->name('backoffice.updateCompany');
-    Route::post('/attendance/import-fingerprint', [BackofficeController::class, 'importFingerprint'])->name('attendance.importFingerprint');
-    Route::post('/backoffice/company/check', [BackofficeController::class, 'checkCompany'])->name('backoffice.checkCompany');
+    // === Backoffice Controllers ===
+    Route::get('/backoffice', [DashboardController::class, 'index'])->name('backoffice.index');
+    Route::post('/backoffice/add', [UserController::class, 'storeUser'])->name('backoffice.add');
+    Route::post('/backoffice/delete-logs', [LogController::class, 'deleteLogs'])->name('backoffice.deleteLogs');
+    Route::post('/backoffice/delete-requests', [RequestController::class, 'deleteRequests'])->name('backoffice.deleteRequests');
+    Route::get('/backoffice/logs/{id}', [LogController::class, 'viewLogs'])->name('backoffice.viewLogs');
+    Route::get('/backoffice/requests/{id}', [RequestController::class, 'viewRequests'])->name('backoffice.viewRequests');
+    Route::get('/backoffice/requestcard/{id}', [RequestController::class, 'viewRequestcard'])->name('backoffice.viewRequestcard');
+    Route::post('/backoffice/add-department', [DepartmentController::class, 'addDepartment'])->name('backoffice.addDepartment');
+    Route::put('/backoffice/update-department/{id}', [DepartmentController::class, 'updateDepartment'])->name('backoffice.updateDepartment');
+    Route::post('/backoffice/delete-department', [DepartmentController::class, 'deleteDepartment'])->name('backoffice.deleteDepartment');
+    Route::put('/backoffice/updateUser/{id}', [UserController::class, 'updateUser'])->name('backoffice.updateUser');
+    Route::put('/backoffice/update-company', [CompanyController::class, 'updateCompany'])->name('backoffice.updateCompany');
+    Route::post('/attendance/import-fingerprint', [FingerprintController::class, 'importFingerprint'])->name('attendance.importFingerprint');
+    Route::post('/backoffice/company/check', [CompanyController::class, 'checkCompany'])->name('backoffice.checkCompany');
 
     // === ScheduleController ===
     Route::get('/schedule', [ScheduleController::class, 'index'])->name('schedule.index');
