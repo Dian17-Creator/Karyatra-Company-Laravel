@@ -66,7 +66,7 @@
                             <select name="nid" id="nid" class="form-select" required>
                                 <option value="">Pilih Karyawan</option>
                                 @foreach ($users as $u)
-                                    <option value="{{ $u->nid }}">{{ $u->cname }}</option>
+                                <option value="{{ $u->nid }}">{{ $u->cname }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -154,9 +154,9 @@
                     </div>
                 </div>
 
-                <div class="modal-footer">
-                    <button class="btn btn-light border" data-bs-dismiss="modal" type="button">Batal</button>
-                    <button class="btn btn-success px-4" type="submit" id="btnSubmit">Simpan</button>
+                <div class="modal-footer d-flex justify-content-between w-100 gap-2">
+                    <button type="button" class="btn btn-secondary flex-fill" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-success flex-fill" id="btnSubmit">Simpan</button>
                 </div>
             </form>
 
