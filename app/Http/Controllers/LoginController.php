@@ -156,4 +156,103 @@ class LoginController extends Controller
         return redirect('/login')
             ->with('success', 'Registrasi berhasil! Silakan login.');
     }
+
+    public function apiRegister(Request $request)
+    {
+        $validator = \Validator::make($request->all(), [
+            'ccompany'  => 'required|string|max:100',
+            'cname'     => 'required|string|max:255',
+            'cpassword' => 'required|string|min:6',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first(),
+                'errors'  => $validator->errors(),
+            ], 422);
+        }
+
+        $domain = Str::of($request->ccompany)
+            ->lower()
+            ->replaceMatches('/^(pt|cv)\s+/i', '')
+            ->replaceMatches('/[^a-z0-9]/', '');
+
+        $username = Str::of($request->cname)
+            ->lower()
+            ->replaceMatches('/[^a-z0-9]/', '');
+
+        $email = "{$username}@{$domain}";
+
+        if (Mcompany::where('cname', $request->ccompany)->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Nama perusahaan sudah terdaftar.'
+            ], 409);
+        }
+
+        if (Mcompany::where('cemail', $domain)->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Domain @ perusahaan sudah digunakan.'
+            ], 409);
+        }
+
+        if (
+            Mowner::where('cemail', $email)->exists() ||
+            muser::where('cemail', $email)->exists()
+        ) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Nama tersebut sudah digunakan pada perusahaan ini.'
+            ], 409);
+        }
+
+        try {
+
+            DB::transaction(function () use ($request, $domain, $email) {
+
+                Mcompany::create([
+                    'cname'  => $request->ccompany,
+                    'cemail' => $domain,
+                ]);
+
+                Mowner::create([
+                    'ccompany'  => $request->ccompany,
+                    'cname'     => $request->cname,
+                    'cemail'    => $email,
+                    'cpassword' => Hash::make($request->cpassword),
+                    'dcreated'  => now(),
+                ]);
+
+                muser::create([
+                    'ccompany'  => $request->ccompany,
+                    'cname'     => $request->cname,
+                    'cemail'    => $email,
+                    'cpassword' => Hash::make($request->cpassword),
+                    'dcreated'  => now(),
+                    'fadmin'    => 1,
+                    'fsuper'    => 1,
+                    'fhrd'      => 1,
+                    'factive'   => 1,
+                ]);
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Registrasi berhasil.',
+                'data' => [
+                    'company' => $request->ccompany,
+                    'email'   => $email,
+                ]
+            ]);
+        } catch (\Exception $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Registrasi gagal.',
+                'error'   => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
+    }
 }

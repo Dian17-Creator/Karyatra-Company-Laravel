@@ -12,6 +12,7 @@ use App\Http\Controllers\DeviceTokenController;
 use App\Http\Controllers\NotifikasiController;
 use App\Http\Controllers\FaceApprovalController;
 use App\Http\Controllers\GajiController;
+use App\Http\Controllers\LoginController;
 
 Route::get('/logs/{userId}', [LogController::class, 'apiLogs']);
 Route::get('/schedule/{userId}', [ScheduleController::class, 'apiUserSchedule']);
@@ -44,3 +45,5 @@ Route::post('/user/store', [UserController::class, 'apiStoreUser']);
 Route::get('/department/list', [DepartmentController::class, 'apiDepartmentList']);
 Route::get('/bank/list', [BankController::class, 'apiBankList']);
 Route::get('/mandiri/rekening', [BankController::class, 'apiMandiriRekening']);
+
+Route::post('/register', [LoginController::class, 'apiRegister']);
