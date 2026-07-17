@@ -46,5 +46,5 @@ Route::get('/department/list', [DepartmentController::class, 'apiDepartmentList'
 Route::get('/bank/list', [BankController::class, 'apiBankList']);
 Route::get('/mandiri/rekening', [BankController::class, 'apiMandiriRekening']);
 
-Route::post('/check/company', [LoginController::class, 'apiCheckCompany']);
+Route::get('/register/check-company', [LoginController::class, 'apiCheckCompany']);
 Route::post('/register', [LoginController::class, 'apiRegister']);
