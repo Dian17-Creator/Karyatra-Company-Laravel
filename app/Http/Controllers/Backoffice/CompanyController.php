@@ -72,10 +72,14 @@ class CompanyController extends Controller
                 'cemail' => $newCemail,
             ]);
 
-            // 2. Jika nama company berubah, sinkronisasi ccompany di muser & mowner
+            // 2. Jika nama company berubah, sinkronisasi ccompany di tabel-tabel terkait
             if ($oldCname !== $newCname) {
                 muser::where('ccompany', $oldCname)->update(['ccompany' => $newCname]);
                 Mowner::where('ccompany', $oldCname)->update(['ccompany' => $newCname]);
+                DB::table('mdepartment')->where('ccompany', $oldCname)->update(['ccompany' => $newCname]);
+                DB::table('mrekening')->where('ccompany', $oldCname)->update(['ccompany' => $newCname]);
+                DB::table('mschedule')->where('ccompany', $oldCname)->update(['ccompany' => $newCname]);
+                DB::table('tdeptlokasi')->where('ccompany', $oldCname)->update(['ccompany' => $newCname]);
             }
 
             // 3. Jika domain email berubah, update cemail semua user & owner
