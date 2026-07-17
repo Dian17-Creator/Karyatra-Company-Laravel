@@ -157,6 +157,25 @@ class LoginController extends Controller
             ->with('success', 'Registrasi berhasil! Silakan login.');
     }
 
+    public function apiCheckCompany(Request $request)
+    {
+        $company = trim($request->ccompany);
+
+        if ($company === '') {
+            return response()->json([
+                'success' => true,
+                'exists' => false,
+            ]);
+        }
+
+        $exists = Mcompany::where('cname', $company)->exists();
+
+        return response()->json([
+            'success' => true,
+            'exists' => $exists,
+        ]);
+    }
+
     public function apiRegister(Request $request)
     {
         $validator = \Validator::make($request->all(), [
