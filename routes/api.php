@@ -48,3 +48,6 @@ Route::get('/mandiri/rekening', [BankController::class, 'apiMandiriRekening']);
 
 Route::get('/register/check-company', [LoginController::class, 'apiCheckCompany']);
 Route::post('/register', [LoginController::class, 'apiRegister']);
+
+Route::get('/company/check', [LoginController::class, 'apiCheckCompany']);
+Route::post('/company/update', [LoginController::class, 'apiUpdateCompany']);
