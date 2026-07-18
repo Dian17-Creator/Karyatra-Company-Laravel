@@ -103,4 +103,142 @@ class CompanyController extends Controller
 
         return back()->with('success', 'Data company berhasil diperbarui. Email semua user telah disesuaikan dengan domain baru.');
     }
+
+    //API For mobile apk
+    public function apiCheckCompany(Request $request)
+    {
+        $authUser = Auth::user() ?? Auth::guard('owner')->user();
+
+        if (!$authUser) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized.'
+            ], 401);
+        }
+
+        $company = Mcompany::where('cname', $authUser->ccompany)->first();
+
+        $query = Mcompany::query();
+
+        if ($company) {
+            $query->where('id', '!=', $company->id);
+        }
+
+        $nameExists = false;
+        $domainExists = false;
+
+        if ($request->filled('cname')) {
+            $nameExists = (clone $query)
+                ->whereRaw('LOWER(cname) = ?', [strtolower(trim($request->cname))])
+                ->exists();
+        }
+
+        if ($request->filled('cemail')) {
+            $domainExists = (clone $query)
+                ->whereRaw('LOWER(cemail) = ?', [strtolower(trim($request->cemail))])
+                ->exists();
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'name_exists' => $nameExists,
+                'domain_exists' => $domainExists
+            ]
+        ]);
+    }
+
+    public function apiUpdateCompany(Request $request)
+    {
+        $authUser = Auth::user() ?? Auth::guard('owner')->user();
+
+        if (!$authUser || $authUser->fsuper != 1) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin untuk mengubah data company.'
+            ], 403);
+        }
+
+        $request->validate([
+            'cname'  => 'required|string|max:255',
+            'cemail' => 'required|string|max:255',
+        ]);
+
+        $company = Mcompany::where('cname', $authUser->ccompany)->firstOrFail();
+
+        $oldCname  = $company->cname;
+        $oldCemail = $company->cemail;
+        $newCname  = trim($request->cname);
+        $newCemail = trim($request->cemail);
+
+        DB::transaction(function () use ($company, $oldCname, $oldCemail, $newCname, $newCemail) {
+
+            // Update company
+            $company->update([
+                'cname'  => $newCname,
+                'cemail' => $newCemail,
+            ]);
+
+            // Sinkronisasi nama company
+            if ($oldCname !== $newCname) {
+
+                muser::where('ccompany', $oldCname)
+                    ->update(['ccompany' => $newCname]);
+
+                Mowner::where('ccompany', $oldCname)
+                    ->update(['ccompany' => $newCname]);
+
+                DB::table('mdepartment')
+                    ->where('ccompany', $oldCname)
+                    ->update(['ccompany' => $newCname]);
+
+                DB::table('mrekening')
+                    ->where('ccompany', $oldCname)
+                    ->update(['ccompany' => $newCname]);
+
+                DB::table('mschedule')
+                    ->where('ccompany', $oldCname)
+                    ->update(['ccompany' => $newCname]);
+
+                DB::table('tdeptlokasi')
+                    ->where('ccompany', $oldCname)
+                    ->update(['ccompany' => $newCname]);
+            }
+
+            // Sinkronisasi domain email
+            if ($oldCemail !== $newCemail) {
+
+                $users = muser::where('ccompany', $newCname)->get();
+
+                foreach ($users as $user) {
+                    $username = explode('@', $user->cemail, 2)[0];
+
+                    $user->update([
+                        'cemail' => $username . '@' . $newCemail
+                    ]);
+                }
+
+                $owners = Mowner::where('ccompany', $newCname)->get();
+
+                foreach ($owners as $owner) {
+                    $username = explode('@', $owner->cemail, 2)[0];
+
+                    $owner->update([
+                        'cemail' => $username . '@' . $newCemail
+                    ]);
+                }
+            }
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data company berhasil diperbarui.',
+            'data' => [
+                'company' => [
+                    'cname'  => $newCname,
+                    'cemail' => $newCemail,
+                ]
+            ]
+        ]);
+    }
 }
