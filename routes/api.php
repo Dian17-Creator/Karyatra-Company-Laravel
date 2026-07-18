@@ -13,6 +13,7 @@ use App\Http\Controllers\NotifikasiController;
 use App\Http\Controllers\FaceApprovalController;
 use App\Http\Controllers\GajiController;
 use App\Http\Controllers\LoginController;
+use App\Http\Controllers\Backoffice\CompanyController;
 
 Route::get('/logs/{userId}', [LogController::class, 'apiLogs']);
 Route::get('/schedule/{userId}', [ScheduleController::class, 'apiUserSchedule']);
@@ -49,5 +50,5 @@ Route::get('/mandiri/rekening', [BankController::class, 'apiMandiriRekening']);
 Route::get('/register/check-company', [LoginController::class, 'apiCheckCompany']);
 Route::post('/register', [LoginController::class, 'apiRegister']);
 
-Route::get('/company/check', [LoginController::class, 'apiCheckCompany']);
-Route::post('/company/update', [LoginController::class, 'apiUpdateCompany']);
+Route::get('/company/check', [CompanyController::class, 'apiCheckCompany']);
+Route::post('/company/update', [CompanyController::class, 'apiUpdateCompany']);
