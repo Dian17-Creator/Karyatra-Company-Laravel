@@ -150,21 +150,29 @@ class CompanyController extends Controller
 
     public function apiUpdateCompany(Request $request)
     {
-        $authUser = Auth::user() ?? Auth::guard('owner')->user();
+        $request->validate([
+            'user_id' => 'required|integer',
+            'cname'   => 'required|string|max:255',
+            'cemail'  => 'required|string|max:255',
+        ]);
 
-        if (!$authUser || $authUser->fsuper != 1) {
+        $user = muser::find($request->user_id);
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User tidak ditemukan.'
+            ], 404);
+        }
+
+        if ($user->fsuper != 1) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki izin untuk mengubah data company.'
             ], 403);
         }
 
-        $request->validate([
-            'cname'  => 'required|string|max:255',
-            'cemail' => 'required|string|max:255',
-        ]);
-
-        $company = Mcompany::where('cname', $authUser->ccompany)->firstOrFail();
+        $company = Mcompany::where('cname', $user->ccompany)->firstOrFail();
 
         $oldCname  = $company->cname;
         $oldCemail = $company->cemail;
