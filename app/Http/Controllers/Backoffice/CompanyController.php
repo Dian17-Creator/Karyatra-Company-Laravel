@@ -107,19 +107,26 @@ class CompanyController extends Controller
     //API For mobile apk
     public function apiCheckCompany(Request $request)
     {
-        $authUser = Auth::user() ?? Auth::guard('owner')->user();
+        $request->validate([
+            'user_id' => 'required|integer',
+            'cname'   => 'nullable|string|max:255',
+            'cemail'  => 'nullable|string|max:255',
+        ]);
 
-        if (!$authUser) {
+        $user = muser::find($request->user_id);
+
+        if (!$user) {
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized.'
-            ], 401);
+                'message' => 'User tidak ditemukan.'
+            ], 404);
         }
 
-        $company = Mcompany::where('cname', $authUser->ccompany)->first();
+        $company = Mcompany::where('cname', $user->ccompany)->first();
 
         $query = Mcompany::query();
 
+        // Abaikan company milik sendiri saat pengecekan
         if ($company) {
             $query->where('id', '!=', $company->id);
         }
@@ -142,7 +149,7 @@ class CompanyController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'name_exists' => $nameExists,
+                'name_exists'   => $nameExists,
                 'domain_exists' => $domainExists
             ]
         ]);
