@@ -9,36 +9,34 @@ use App\Models\Mowner;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class CompanyController extends Controller
 {
     public function checkCompany(Request $request)
     {
+        Log::info("Web Check Company - Request Data", $request->all());
         $authUser = Auth::user() ?? Auth::guard('owner')->user();
-
         $company = Mcompany::where('cname', $authUser->ccompany)->first();
-
         $query = Mcompany::query();
-
         if ($company) {
             $query->where('id', '!=', $company->id);
         }
-
         $nameExists = false;
         $domainExists = false;
-
         if ($request->filled('cname')) {
-            $nameExists = (clone $query)
-                ->whereRaw('LOWER(cname)=?', [strtolower(trim($request->cname))])
-                ->exists();
+            $q = (clone $query)->whereRaw('LOWER(cname)=?', [strtolower(trim($request->cname))]);
+            Log::info("Web Check Company - Name Check SQL: " . $q->toSql());
+            Log::info("Web Check Company - Name Check Bindings: ", $q->getBindings());
+            $nameExists = $q->exists();
         }
-
         if ($request->filled('cemail')) {
-            $domainExists = (clone $query)
-                ->whereRaw('LOWER(cemail)=?', [strtolower(trim($request->cemail))])
-                ->exists();
+            $q = (clone $query)->whereRaw('LOWER(cemail)=?', [strtolower(trim($request->cemail))]);
+            Log::info("Web Check Company - Domain Check SQL: " . $q->toSql());
+            Log::info("Web Check Company - Domain Check Bindings: ", $q->getBindings());
+            $domainExists = $q->exists();
         }
-
+        Log::info("Web Check Company - Results: name_exists=$nameExists, domain_exists=$domainExists");
         return response()->json([
             'name_exists'   => $nameExists,
             'domain_exists' => $domainExists
@@ -107,6 +105,8 @@ class CompanyController extends Controller
     //API For mobile apk
     public function apiCheckCompany(Request $request)
     {
+        Log::info("API Check Company - Request Data", $request->all());
+
         $request->validate([
             'user_id' => 'required|integer',
             'cname'   => 'nullable|string|max:255',
@@ -116,6 +116,7 @@ class CompanyController extends Controller
         $user = muser::find($request->user_id);
 
         if (!$user) {
+            Log::warning("API Check Company - User not found: " . $request->user_id);
             return response()->json([
                 'success' => false,
                 'message' => 'User tidak ditemukan.'
@@ -135,16 +136,20 @@ class CompanyController extends Controller
         $domainExists = false;
 
         if ($request->filled('cname')) {
-            $nameExists = (clone $query)
-                ->whereRaw('LOWER(cname) = ?', [strtolower(trim($request->cname))])
-                ->exists();
+            $q = (clone $query)->whereRaw('LOWER(cname) = ?', [strtolower(trim($request->cname))]);
+            Log::info("API Check Company - Name Check SQL: " . $q->toSql());
+            Log::info("API Check Company - Name Check Bindings: ", $q->getBindings());
+            $nameExists = $q->exists();
         }
 
         if ($request->filled('cemail')) {
-            $domainExists = (clone $query)
-                ->whereRaw('LOWER(cemail) = ?', [strtolower(trim($request->cemail))])
-                ->exists();
+            $q = (clone $query)->whereRaw('LOWER(cemail) = ?', [strtolower(trim($request->cemail))]);
+            Log::info("API Check Company - Domain Check SQL: " . $q->toSql());
+            Log::info("API Check Company - Domain Check Bindings: ", $q->getBindings());
+            $domainExists = $q->exists();
         }
+
+        Log::info("API Check Company - Results: name_exists=$nameExists, domain_exists=$domainExists");
 
         return response()->json([
             'success' => true,
