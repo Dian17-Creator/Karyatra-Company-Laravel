@@ -52,3 +52,4 @@ Route::post('/register', [LoginController::class, 'apiRegister']);
 
 Route::get('/company/check', [CompanyController::class, 'apiCheckCompany']);
 Route::post('/company/update', [CompanyController::class, 'apiUpdateCompany']);
+Route::get('/company', [CompanyController::class, 'apiGetCompany']);

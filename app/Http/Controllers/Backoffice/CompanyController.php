@@ -241,4 +241,33 @@ class CompanyController extends Controller
             ]
         ]);
     }
+
+    public function apiGetCompany()
+    {
+        $authUser = Auth::user() ?? Auth::guard('owner')->user();
+
+        if (!$authUser) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized.'
+            ], 401);
+        }
+
+        $company = Mcompany::where('cname', $authUser->ccompany)->first();
+
+        if (!$company) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Company tidak ditemukan.'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'cname'  => $company->cname,
+                'cemail' => $company->cemail,
+            ]
+        ]);
+    }
 }
