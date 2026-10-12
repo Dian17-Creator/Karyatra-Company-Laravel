@@ -92,6 +92,7 @@ class FaceApprovalController extends Controller
                 $this->rekog->indexFaces([
                     "CollectionId" => $this->collectionId,
                     "ExternalImageId" => (string) $user->nid,
+                    "MaxFaces" => 1,
                     "Image" => [
                         "Bytes" => file_get_contents($filePath),
                     ],
@@ -257,6 +258,7 @@ class FaceApprovalController extends Controller
                 $this->rekog->indexFaces([
                     'CollectionId'   => $this->collectionId,
                     'ExternalImageId' => (string) $user->nid,
+                    'MaxFaces' => 1,
                     'Image'          => [
                         'Bytes' => file_get_contents($filePath),
                     ],
